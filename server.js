@@ -1,5 +1,4 @@
-// server.js – License Server لـ MCpos باستخدام SQLite (مُعدل لـ Render)
-// يدعم إدارة التحديثات مع رفع ملفات التحديث وتحميلها
+// server.js – License Server لـ MCpos (إصدار آمن للإنتاج)
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -12,9 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ---- مسارات التخزين (ثابتة في Render، محلية في غيره) ----
-const isRender = !!process.env.RENDER; // true إذا كنا على Render
+const isRender = !!process.env.RENDER;
 
-// مجلد رفع التحديثات
 const uploadsDir = isRender
     ? '/opt/render/.data/uploads'
     : path.join(__dirname, 'uploads');
@@ -22,7 +20,6 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// إعداد multer لتخزين ملفات التحديث
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadsDir),
     filename: (req, file, cb) => {
@@ -31,16 +28,36 @@ const storage = multer.diskStorage({
         cb(null, `update-${req.body.version || uniqueSuffix}${ext}`);
     }
 });
-const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } }); // حد 500 ميجا
+const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } });
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// تحميل المفتاح الخاص للتوقيع
-const privateKey = fs.readFileSync(path.join(__dirname, 'private.pem'), 'utf8');
+// ---- المفتاح الخاص (من متغير البيئة أو ملف محلي للتطوير فقط) ----
+const privateKey = process.env.PRIVATE_KEY
+    || (fs.existsSync('private.pem') ? fs.readFileSync('private.pem', 'utf8') : '');
 
-// فتح قاعدة البيانات – مسار ثابت في Render، محلي في غيره
+if (!privateKey) {
+    console.error('❌ PRIVATE_KEY غير موجود. يجب تعيينه في متغيرات البيئة أو ملف private.pem.');
+    process.exit(1);
+}
+
+// ---- حماية لوحة الإدارة بكلمة مرور ----
+const ADMIN_USER = process.env.ADMIN_USER || 'mcpos';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'mcpos2025';
+
+app.use('/admin', (req, res, next) => {
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+    if (login === ADMIN_USER && password === ADMIN_PASS) {
+        return next();
+    }
+    res.set('WWW-Authenticate', 'Basic realm="MCpos Admin"');
+    res.status(401).send('Authentication required.');
+});
+
+// ---- قاعدة البيانات ----
 const dbPath = isRender
     ? '/opt/render/.data/mcpos.db'
     : path.join(__dirname, 'database', 'mcpos.db');
@@ -48,11 +65,9 @@ if (!fs.existsSync(path.dirname(dbPath))) {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 }
 const db = new sqlite3.Database(dbPath);
-
-// تفعيل وضع WAL
 db.run('PRAGMA journal_mode=WAL;');
 
-// إنشاء الجداول
+// ---- إنشاء الجداول ----
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS devices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,7 +136,7 @@ db.serialize(() => {
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('update_policy', 'optional')`);
 });
 
-// دوال مساعدة
+// ---- دوال مساعدة ----
 function signPayload(payload) {
     const sign = crypto.createSign('SHA256');
     sign.update(JSON.stringify(payload));
@@ -130,15 +145,13 @@ function signPayload(payload) {
 
 // ====================== API Routes ======================
 
-// مسار الجذر: تأكيد أن الخادم يعمل
 app.get('/', (req, res) => {
     res.send('✅ MCpos License Server is running.');
 });
 
-// تجاهل طلب favicon.ico
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// الحصول على جميع الأجهزة (لوحة الإدارة)
+// الحصول على جميع الأجهزة
 app.get('/api/devices', (req, res) => {
     db.all('SELECT * FROM devices ORDER BY created_at DESC', (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -369,7 +382,6 @@ app.post('/api/discount-codes/validate', (req, res) => {
 
 // ================== نظام التحديثات ==================
 
-// رفع تحديث جديد (مع ملف)
 app.post('/api/updates', upload.single('update_file'), (req, res) => {
     const { version, required, notes } = req.body;
     if (!version) return res.status(400).json({ success: false, error: 'رقم الإصدار مطلوب' });
@@ -390,43 +402,32 @@ app.post('/api/updates', upload.single('update_file'), (req, res) => {
     );
 });
 
-// جلب آخر تحديث (معلومات فقط)
 app.get('/api/updates/latest', (req, res) => {
     db.get('SELECT version, required, notes, file_name, file_size, created_at FROM updates ORDER BY created_at DESC LIMIT 1', (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.json({ success: true, data: null });
-        // إضافة رابط التحميل
         row.download_url = `/api/updates/download/${row.version}`;
         res.json({ success: true, data: row });
     });
 });
 
-// تحميل ملف تحديث محدد
 app.get('/api/updates/download/:version', (req, res) => {
     const { version } = req.params;
     db.get('SELECT * FROM updates WHERE version = ?', [version], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row || !row.file_path) return res.status(404).json({ error: 'الملف غير موجود' });
-        
         const absolutePath = path.resolve(row.file_path);
-        if (!fs.existsSync(absolutePath)) {
-            return res.status(404).json({ error: 'الملف غير موجود على الخادم' });
-        }
+        if (!fs.existsSync(absolutePath)) return res.status(404).json({ error: 'الملف غير موجود على الخادم' });
         res.download(absolutePath, row.file_name || 'update.exe');
     });
 });
 
-// حذف تحديث (اختياري)
 app.delete('/api/updates/:version', (req, res) => {
     const { version } = req.params;
     db.get('SELECT * FROM updates WHERE version = ?', [version], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ error: 'Not found' });
-        
-        // حذف الملف إذا وجد
-        if (row.file_path && fs.existsSync(row.file_path)) {
-            fs.unlinkSync(row.file_path);
-        }
+        if (row.file_path && fs.existsSync(row.file_path)) fs.unlinkSync(row.file_path);
         db.run('DELETE FROM updates WHERE version = ?', [version], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true });
@@ -434,12 +435,7 @@ app.delete('/api/updates/:version', (req, res) => {
     });
 });
 
-// لوحة الإدارة
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
-
-// ================== المهام الدورية ==================
+// ---- المهام الدورية ----
 setInterval(() => {
     const now = new Date();
     db.all('SELECT * FROM devices WHERE status = "trial" AND trial_end IS NOT NULL', (err, rows) => {
@@ -462,7 +458,7 @@ setInterval(() => {
     });
 }, 60 * 1000);
 
-// تشغيل الخادم
+// ---- تشغيل الخادم ----
 app.listen(PORT, () => {
     console.log(`🚀 License Server running on port ${PORT}`);
 });
