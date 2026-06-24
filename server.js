@@ -57,6 +57,11 @@ app.use('/admin', (req, res, next) => {
     res.status(401).send('Authentication required.');
 });
 
+// صفحة لوحة الإدارة (بعد الحماية)
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 // ---- قاعدة البيانات ----
 const dbPath = isRender
     ? '/opt/render/.data/mcpos.db'
