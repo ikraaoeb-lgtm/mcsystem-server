@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCpos - نظام إدارة المبيعات والمخزون</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Tajawal', sans-serif; }
+        body { background: #f8fafc; }
+        .navbar { background: #1e293b; }
+        .navbar-brand { font-weight: 800; font-size: 1.8rem; color: #fbbf24 !important; }
+        .hero {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 20px; }
+        .hero p { font-size: 1.2rem; opacity: 0.9; margin-bottom: 30px; }
+        .btn-download {
+            background: #fbbf24;
+            color: #1e293b;
+            font-weight: 700;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            border: none;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-download:hover { background: #f59e0b; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); color: #1e293b; }
+        .section-title { font-weight: 800; margin-bottom: 40px; color: #1e293b; }
+        .feature-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: 0.3s;
+            text-align: center;
+            height: 100%;
+        }
+        .feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .feature-icon {
+            width: 70px; height: 70px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px; font-size: 1.8rem; color: white;
+        }
+        .footer { background: #1e293b; color: white; padding: 30px 0; margin-top: 60px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="#"><i class="fas fa-chart-line me-2"></i>MCpos</a>
+        <div class="ms-auto">
+            <a href="/admin" class="btn btn-outline-warning btn-sm">لوحة التحكم</a>
+        </div>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="container">
+        <h1>نظام MCpos لإدارة المبيعات والمخزون</h1>
+        <p class="lead">حل متكامل لنقاط البيع، إدارة المنتجات، العملاء، الديون، والتقارير. صُمم خصيصًا للسوق الجزائري.</p>
+        <a href="https://github.com/ikraaoeb-lgtm/mcpos/releases/download/v1.0.0/MCpos.Setup.1.0.0.exe" class="btn btn-download">
+            <i class="fas fa-download me-2"></i>تحميل البرنامج (Windows)
+        </a>
+        <p class="mt-3" style="opacity:0.8;">الإصدار 1.0.0 | يدعم Windows 10/11 | تجربة مجانية 14 يومًا</p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center section-title">لماذا MCpos؟</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #10b981;"><i class="fas fa-cash-register"></i></div>
+                    <h5>نقطة بيع سريعة</h5>
+                    <p>واجهة بيع سهلة وسريعة مع دعم الباركود واللمس. إتمام العمليات في ثوانٍ.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #3b82f6;"><i class="fas fa-boxes"></i></div>
+                    <h5>إدارة مخزون متقدمة</h5>
+                    <p>تتبع الكميات، المتغيرات، التنبيهات عند انخفاض المخزون، وتقارير شاملة.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #f59e0b;"><i class="fas fa-users"></i></div>
+                    <h5>إدارة العملاء</h5>
+                    <p>قاعدة بيانات العملاء مع بطاقات QR، سجل المشتريات، والديون المستحقة.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #ef4444;"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <h5>الديون والحجوزات</h5>
+                    <p>نظام ديون مرن مع دفعات جزئية، وحجوزات مع دفع مسبق.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #8b5cf6;"><i class="fas fa-chart-bar"></i></div>
+                    <h5>تقارير مالية</h5>
+                    <p>أرباح، إيرادات، مصاريف، وتدفقات نقدية. كل شيء في لوحة واحدة.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #06b6d4;"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <h5>تحديثات تلقائية</h5>
+                    <p>يتم تحديث البرنامج تلقائيًا عبر الإنترنت لتحصل على أحدث الميزات.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="container text-center">
+        <p class="mb-1">© 2025 MCpos Team. جميع الحقوق محفوظة.</p>
+        <small>للدعم الفني: <a href="mailto:newtipstv@gmail.com" class="text-warning">newtipstv@gmail.com</a></small>
+    </div>
+</footer>
+
+</body>
+</html>
