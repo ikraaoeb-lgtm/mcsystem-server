@@ -717,31 +717,29 @@
         }
 
         // ==================== دوال التحديثات ====================
-        let allUpdates = [];
-
         async function loadUpdates() {
+            const tbody = document.getElementById('updatesTableBody');
             try {
                 const res = await fetch(API_UPDATES);
                 const data = await res.json();
-                allUpdates = data.data || [];
-                renderUpdates();
+                const updates = data.data || [];
+                
+                if (updates.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد تحديثات مرفوعة</td></tr>';
+                } else {
+                    renderUpdates(updates);
+                }
             } catch (e) {
-                document.getElementById('updatesTableBody').innerHTML = 
-                    '<tr><td colspan="6" class="text-center text-danger py-4">فشل تحميل التحديثات</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">فشل تحميل التحديثات (خطأ شبكة)</td></tr>';
+                console.error('فشل تحميل التحديثات:', e);
             }
         }
 
-        function renderUpdates() {
+        function renderUpdates(updates) {
             const tbody = document.getElementById('updatesTableBody');
-            if (!allUpdates || allUpdates.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد تحديثات مرفوعة</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = allUpdates.map(u => {
+            tbody.innerHTML = updates.map(u => {
                 const typeBadge = u.required ? '<span class="badge bg-danger">إجباري</span>' : '<span class="badge bg-secondary">اختياري</span>';
                 const fileName = u.file_name || '-';
-                // عرض التاريخ والوقت معاً
                 const createdDate = u.created_at ? new Date(u.created_at).toLocaleString('ar-EG') : '-';
                 return `
                     <tr>
@@ -760,7 +758,7 @@
             }).join('');
         }
 
-        // رفع التحديث مع شريط تقدم
+        // رفع التحديث مع شريط تقدم وإعادة تحميل بعد نجاح مؤكد
         function uploadUpdate() {
             const version = document.getElementById('updateVersion').value.trim();
             const required = document.getElementById('updateRequired').value;
@@ -810,14 +808,19 @@
                             document.getElementById('updateVersion').value = '';
                             document.getElementById('updateNotes').value = '';
                             fileInput.value = '';
-                            // إعادة تحميل التحديثات لعرض الجديد
-                            loadUpdates();
+                            // انتظر قليلاً لتتم مزامنة قاعدة البيانات على Render ثم أعد التحميل
+                            setTimeout(() => {
+                                loadUpdates().catch(() => {
+                                    // إعادة المحاولة مرة واحدة بعد ثانية
+                                    setTimeout(() => loadUpdates(), 1000);
+                                });
+                            }, 500);
                         } else {
                             alert('❌ فشل رفع التحديث: ' + (response.error || 'خطأ غير معروف'));
                         }
                     } catch (e) {
                         alert('تم رفع الملف ولكن تعذر تحليل الرد');
-                        loadUpdates();
+                        setTimeout(() => loadUpdates(), 500);
                     }
                 } else {
                     try {
