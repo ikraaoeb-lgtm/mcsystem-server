@@ -342,18 +342,39 @@ app.delete('/api/devices/:hwid', (req, res) => {
     });
 });
 
-// نبضات القلب
+// نبضات القلب – تسجيل الأجهزة تلقائياً إذا لم تكن موجودة
 app.post('/api/heartbeat/:hwid', (req, res) => {
     const { hwid } = req.params;
     const { status, details } = req.body;
-    db.run('INSERT INTO heartbeats (hwid, timestamp, status, details) VALUES (?,?,?,?)',
-        [hwid, new Date().toISOString(), status, details],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [new Date().toISOString(), hwid]);
-            res.json({ success: true });
+    const now = new Date().toISOString();
+
+    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        if (row) {
+            // تحديث آخر ظهور
+            db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                db.run('INSERT INTO heartbeats (hwid, timestamp, status, details) VALUES (?,?,?,?)',
+                    [hwid, now, status, details]);
+                res.json({ success: true });
+            });
+        } else {
+            // إنشاء سجل جديد للجهاز تلقائياً
+            const shopName = details ? details.replace('متجر: ', '') : 'جهاز غير مسجل';
+            db.run(
+                `INSERT INTO devices (hwid, shop_name, status, trial_start, trial_end, created_at, updated_at, last_seen)
+                 VALUES (?, ?, ?, date('now'), date('now', '+14 days'), ?, ?, ?)`,
+                [hwid, shopName, status || 'trial', now, now, now],
+                function (err) {
+                    if (err) return res.status(500).json({ error: err.message });
+                    db.run('INSERT INTO heartbeats (hwid, timestamp, status, details) VALUES (?,?,?,?)',
+                        [hwid, now, status, details]);
+                    res.json({ success: true, created: true });
+                }
+            );
         }
-    );
+    });
 });
 
 // إعدادات النظام
