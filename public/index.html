@@ -1,133 +1,356 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCpos - نظام إدارة المبيعات والمخزون</title>
+    <title>MCpos - نظام إدارة المبيعات والمخزون الذكي</title>
+    <meta name="description" content="نظام MCpos لإدارة المبيعات والمخزون والعملاء. اشتراكات مرنة، تحديثات تلقائية، دعم فني.">
+    <meta property="og:title" content="MCpos - إدارة المبيعات الذكية">
+    <meta property="og:description" content="منصة متكاملة لنقاط البيع، المخزون، والتقارير.">
+    <meta name="twitter:card" content="summary_large_image">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #ffffff;
+            --text: #1e293b;
+            --card-bg: #f8fafc;
+            --border: #e2e8f0;
+            --hero-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --text: #f1f5f9;
+            --card-bg: #1e293b;
+            --border: #334155;
+            --hero-bg: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+        }
         * { font-family: 'Tajawal', sans-serif; }
-        body { background: #f8fafc; }
-        .navbar { background: #1e293b; }
-        .navbar-brand { font-weight: 800; font-size: 1.8rem; color: #fbbf24 !important; }
-        .hero {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            color: white;
-            padding: 80px 0;
-            text-align: center;
-        }
-        .hero h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 20px; }
-        .hero p { font-size: 1.2rem; opacity: 0.9; margin-bottom: 30px; }
-        .btn-download {
-            background: #fbbf24;
-            color: #1e293b;
-            font-weight: 700;
-            padding: 15px 40px;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            border: none;
-            transition: 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-download:hover { background: #f59e0b; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); color: #1e293b; }
-        .section-title { font-weight: 800; margin-bottom: 40px; color: #1e293b; }
-        .feature-card {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: 0.3s;
-            text-align: center;
-            height: 100%;
-        }
-        .feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .feature-icon {
-            width: 70px; height: 70px; border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 20px; font-size: 1.8rem; color: white;
-        }
-        .footer { background: #1e293b; color: white; padding: 30px 0; margin-top: 60px; }
+        body { background: var(--bg); color: var(--text); transition: 0.3s; }
+        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); }
+        .hero { background: var(--hero-bg); padding: 100px 0; }
+        .section { padding: 80px 0; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .btn-primary { background: var(--primary); border-color: var(--primary); }
+        .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+        .toast-container { position: fixed; bottom: 20px; left: 20px; z-index: 9999; }
+        .skeleton-loader { background: linear-gradient(90deg, var(--card-bg) 25%, var(--border) 50%, var(--card-bg) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 12px; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
 <body>
+    <!-- شريط الإعلان العلوي -->
+    <div id="announcement-bar" class="bg-warning text-dark text-center py-2 fw-bold d-none"></div>
 
-<nav class="navbar navbar-expand-lg navbar-dark">
-    <div class="container">
-        <a class="navbar-brand" href="#"><i class="fas fa-chart-line me-2"></i>MCpos</a>
-        <!-- رابط لوحة التحكم مخفي - يمكنك الوصول إليها عبر /admin مباشرة -->
-    </div>
-</nav>
+    <!-- القائمة العلوية -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="#"><i class="fas fa-chart-line me-2 text-primary"></i>MCpos</a>
+            <div class="ms-auto d-flex gap-2">
+                <a href="#pricing" class="btn btn-outline-primary btn-sm">الأسعار</a>
+                <a href="#faq" class="btn btn-outline-secondary btn-sm">أسئلة شائعة</a>
+                <button class="btn btn-outline-secondary btn-sm" onclick="toggleTheme()"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+    </nav>
 
-<section class="hero">
-    <div class="container">
-        <h1>نظام MCpos لإدارة المبيعات والمخزون</h1>
-        <p class="lead">حل متكامل لنقاط البيع، إدارة المنتجات، العملاء، الديون، والتقارير. صُمم خصيصًا للسوق الجزائري.</p>
-        <a href="https://github.com/ikraaoeb-lgtm/mcpos/releases/download/v1.0.0/MCpos.Setup.1.0.0.exe" class="btn btn-download">
-            <i class="fas fa-download me-2"></i>تحميل البرنامج (Windows)
-        </a>
-        <p class="mt-3" style="opacity:0.8;">الإصدار 1.0.0 | يدعم Windows 10/11 | تجربة مجانية 14 يومًا</p>
-    </div>
-</section>
+    <!-- القسم الرئيسي Hero -->
+    <section class="hero text-center text-white" data-aos="fade-up">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-3">MCpos — منصة إدارة المبيعات والمخزون الذكية</h1>
+            <p class="lead mb-4">نظام احترافي لإدارة المبيعات، المخزون، العملاء، والتقارير مع تحديثات تلقائية واشتراكات مرنة.</p>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <a href="https://github.com/ikraaoeb-lgtm/mcpos/releases/download/v1.0.0/MCpos.Setup.1.0.0.exe" class="btn btn-light btn-lg"><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
+                <a href="#pricing" class="btn btn-outline-light btn-lg">عرض الأسعار</a>
+                <a href="#discount" class="btn btn-outline-warning btn-lg">لدي كود خصم</a>
+            </div>
+        </div>
+    </section>
 
-<section class="py-5">
-    <div class="container">
-        <h2 class="text-center section-title">لماذا MCpos؟</h2>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #10b981;"><i class="fas fa-cash-register"></i></div>
-                    <h5>نقطة بيع سريعة</h5>
-                    <p>واجهة بيع سهلة وسريعة مع دعم الباركود واللمس. إتمام العمليات في ثوانٍ.</p>
-                </div>
+    <!-- قسم المميزات -->
+    <section class="section" data-aos="fade-up">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-5">لماذا MCpos؟</h2>
+            <div class="row g-4">
+                <div class="col-md-4"><div class="card p-4 h-100"><div class="fs-1 text-primary mb-3"><i class="fas fa-cash-register"></i></div><h5>نقطة بيع سريعة</h5><p>واجهة سهلة مع دعم الباركود واللمس</p></div></div>
+                <div class="col-md-4"><div class="card p-4 h-100"><div class="fs-1 text-success mb-3"><i class="fas fa-boxes"></i></div><h5>مخزون متقدم</h5><p>تتبع الكميات والمتغيرات والتنبيهات</p></div></div>
+                <div class="col-md-4"><div class="card p-4 h-100"><div class="fs-1 text-warning mb-3"><i class="fas fa-users"></i></div><h5>إدارة العملاء</h5><p>قاعدة بيانات مع بطاقات QR وسجل المشتريات</p></div></div>
+                <div class="col-md-4"><div class="card p-4 h-100"><div class="fs-1 text-danger mb-3"><i class="fas fa-file-invoice-dollar"></i></div><h5>الديون والحجوزات</h5><p>دفعات جزئية وحجوزات مع دفع مسبق</p></div></div>
+                <div class="col-md-4"><div class="card p-4 h-100"><div class="fs-1 text-info mb-3"><i class="fas fa-chart-bar"></i></div><h5>تقارير مالية</h5><p>أرباح، إيرادات، مصاريف في لوحة واحدة</p></div></div>
+                <div class="col-md-4"><div class="card p-4 h-100"><div class="fs-1 text-secondary mb-3"><i class="fas fa-cloud-upload-alt"></i></div><h5>تحديثات تلقائية</h5><p>تحديث مباشر عبر الإنترنت</p></div></div>
             </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #3b82f6;"><i class="fas fa-boxes"></i></div>
-                    <h5>إدارة مخزون متقدمة</h5>
-                    <p>تتبع الكميات، المتغيرات، التنبيهات عند انخفاض المخزون، وتقارير شاملة.</p>
-                </div>
+        </div>
+    </section>
+
+    <!-- قسم الأسعار والاشتراكات -->
+    <section id="pricing" class="section bg-light" data-aos="fade-up">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-5">الباقات والاشتراكات</h2>
+            <div class="row g-4" id="pricing-cards">
+                <div class="col-md-4"><div class="card p-4"><div class="skeleton-loader" style="height:200px;"></div></div></div>
+                <div class="col-md-4"><div class="card p-4"><div class="skeleton-loader" style="height:200px;"></div></div></div>
+                <div class="col-md-4"><div class="card p-4"><div class="skeleton-loader" style="height:200px;"></div></div></div>
             </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #f59e0b;"><i class="fas fa-users"></i></div>
-                    <h5>إدارة العملاء</h5>
-                    <p>قاعدة بيانات العملاء مع بطاقات QR، سجل المشتريات، والديون المستحقة.</p>
-                </div>
+        </div>
+    </section>
+
+    <!-- قسم العروض والخصومات -->
+    <section id="promotions" class="section" data-aos="fade-up">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-5">العروض الحالية</h2>
+            <div class="row g-4" id="promotions-container">
+                <div class="col-12"><div class="skeleton-loader" style="height:100px;"></div></div>
             </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #ef4444;"><i class="fas fa-file-invoice-dollar"></i></div>
-                    <h5>الديون والحجوزات</h5>
-                    <p>نظام ديون مرن مع دفعات جزئية، وحجوزات مع دفع مسبق.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #8b5cf6;"><i class="fas fa-chart-bar"></i></div>
-                    <h5>تقارير مالية</h5>
-                    <p>أرباح، إيرادات، مصاريف، وتدفقات نقدية. كل شيء في لوحة واحدة.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #06b6d4;"><i class="fas fa-cloud-upload-alt"></i></div>
-                    <h5>تحديثات تلقائية</h5>
-                    <p>يتم تحديث البرنامج تلقائيًا عبر الإنترنت لتحصل على أحدث الميزات.</p>
+        </div>
+    </section>
+
+    <!-- قسم أكواد الخصم -->
+    <section id="discount" class="section bg-light" data-aos="fade-up">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-4">هل لديك كود خصم؟</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-5">
+                    <div class="input-group mb-3">
+                        <input type="text" id="discount-code-input" class="form-control" placeholder="أدخل الكود">
+                        <button class="btn btn-primary" onclick="validateDiscount()">تطبيق</button>
+                    </div>
+                    <div id="discount-result"></div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<footer class="footer">
-    <div class="container text-center">
-        <p class="mb-1">© 2025 MCpos Team. جميع الحقوق محفوظة.</p>
-        <small>للدعم الفني: <a href="mailto:newtipstv@gmail.com" class="text-warning">newtipstv@gmail.com</a></small>
-    </div>
-</footer>
+    <!-- قسم الحملات التسويقية -->
+    <section id="campaigns" class="section" data-aos="fade-up">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-5">الحملات التسويقية</h2>
+            <div class="row g-4" id="campaigns-container">
+                <div class="col-12"><div class="skeleton-loader" style="height:200px;"></div></div>
+            </div>
+        </div>
+    </section>
 
+    <!-- قسم الأسئلة الشائعة -->
+    <section id="faq" class="section bg-light" data-aos="fade-up">
+        <div class="container">
+            <h2 class="fw-bold mb-4 text-center">أسئلة شائعة</h2>
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#q1">هل توجد نسخة مجانية؟</button></h2>
+                    <div id="q1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion"><div class="accordion-body">نعم، يمكنك تجربة MCpos مجاناً لمدة 14 يوماً بكامل الميزات.</div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#q2">هل أحتاج إلى إنترنت دائم؟</button></h2>
+                    <div id="q2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion"><div class="accordion-body">البرنامج يعمل بدون إنترنت بعد التفعيل، ويحتاج الاتصال فقط للتحديثات والمزامنة.</div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#q3">كيف يتم التحديث؟</button></h2>
+                    <div id="q3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion"><div class="accordion-body">يتم التحديث تلقائياً عبر الإنترنت عند توفر إصدار جديد.</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- قسم CTA -->
+    <section class="text-center py-5 bg-primary text-white" data-aos="fade-up">
+        <div class="container">
+            <h2 class="fw-bold mb-3">ابدأ إدارة متجرك اليوم</h2>
+            <p class="lead mb-4">انضم إلى آلاف المستخدمين الذين يثقون في MCpos</p>
+            <a href="https://github.com/ikraaoeb-lgtm/mcpos/releases/download/v1.0.0/MCpos.Setup.1.0.0.exe" class="btn btn-light btn-lg"><i class="fas fa-download me-2"></i>تحميل مجاني</a>
+        </div>
+    </section>
+
+    <!-- التذييل -->
+    <footer class="py-4 bg-dark text-white text-center">
+        <div class="container">
+            <p class="mb-0">© 2025 MCpos Team. جميع الحقوق محفوظة.</p>
+            <small>للدعم الفني: <a href="mailto:newtipstv@gmail.com" class="text-warning">newtipstv@gmail.com</a></small>
+        </div>
+    </footer>
+
+    <!-- حاوية الإشعارات -->
+    <div class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init();
+        const API = '/api';
+
+        // Dark mode toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const theme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+        (function() {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+
+        // Announcement bar
+        async function loadBanner() {
+            try {
+                const res = await fetch(`${API}/banner`);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const bar = document.getElementById('announcement-bar');
+                    bar.textContent = data.data.message;
+                    bar.classList.remove('d-none');
+                    if (data.data.link_url) {
+                        bar.onclick = () => window.location.href = data.data.link_url;
+                        bar.style.cursor = 'pointer';
+                    }
+                }
+            } catch (e) { console.error('Banner error:', e); }
+        }
+
+        // Pricing
+        async function loadPricing() {
+            const container = document.getElementById('pricing-cards');
+            try {
+                const res = await fetch(`${API}/prices`);
+                const data = await res.json();
+                const prices = data.data || {};
+                container.innerHTML = `
+                    <div class="col-md-4 mb-4">
+                        <div class="card p-4 h-100">
+                            <h4>MCpos Lite</h4>
+                            <p class="text-muted">تجربة مجانية 14 يوم</p>
+                            <ul class="list-unstyled text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>نقطة بيع</li>
+                                <li><i class="fas fa-check text-success me-2"></i>العملاء</li>
+                                <li><i class="fas fa-check text-success me-2"></i>المنتجات</li>
+                            </ul>
+                            <a href="#" class="btn btn-outline-primary mt-auto">ابدأ مجاناً</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card p-4 h-100 border-primary position-relative">
+                            <span class="badge bg-primary position-absolute top-0 start-0 m-2">الأكثر شعبية</span>
+                            <h4>MCpos Pro ⭐</h4>
+                            <p class="fs-3 fw-bold">${prices.monthly || 1500} د.ج <small class="fs-6 text-muted">/شهرياً</small></p>
+                            <ul class="list-unstyled text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>كل ميزات Lite</li>
+                                <li><i class="fas fa-check text-success me-2"></i>تقارير متقدمة</li>
+                                <li><i class="fas fa-check text-success me-2"></i>مزامنة سحابية</li>
+                                <li><i class="fas fa-check text-success me-2"></i>نسخ احتياطي</li>
+                            </ul>
+                            <a href="#" class="btn btn-primary mt-auto">اشترك الآن</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card p-4 h-100">
+                            <h4>MCpos Ultimate</h4>
+                            <p class="fs-3 fw-bold">${prices.permanent || 20000} د.ج <small class="fs-6 text-muted">مرة واحدة</small></p>
+                            <ul class="list-unstyled text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>كل المميزات</li>
+                                <li><i class="fas fa-check text-success me-2"></i>دعم أولوية</li>
+                                <li><i class="fas fa-check text-success me-2"></i>تراخيص متعددة</li>
+                            </ul>
+                            <a href="#" class="btn btn-outline-primary mt-auto">ابدأ الآن</a>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                container.innerHTML = '<div class="col-12 text-center text-muted">تعذر تحميل الأسعار</div>';
+            }
+        }
+
+        // Promotions
+        async function loadPromotions() {
+            const container = document.getElementById('promotions-container');
+            try {
+                const res = await fetch(`${API}/promotions/active`);
+                const data = await res.json();
+                if (data.success && data.data.length > 0) {
+                    container.innerHTML = data.data.map(p => `
+                        <div class="col-md-6 mb-3">
+                            <div class="card p-3">
+                                <h5>${p.title}</h5>
+                                <p>${p.description}</p>
+                                <span class="badge bg-success fs-6">${p.discount_type === 'percent' ? p.discount_value + '%' : p.discount_value + ' د.ج'}</span>
+                                <br><small class="text-muted">ينتهي: ${new Date(p.end_date).toLocaleDateString('ar-EG')}</small>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="col-12 text-muted">لا توجد عروض حالياً</div>';
+                }
+            } catch (e) { container.innerHTML = '<div class="col-12 text-muted">تعذر تحميل العروض</div>'; }
+        }
+
+        // Discount code validation
+        async function validateDiscount() {
+            const code = document.getElementById('discount-code-input').value.trim();
+            const resultDiv = document.getElementById('discount-result');
+            if (!code) return showToast('يرجى إدخال كود الخصم', 'warning');
+            resultDiv.innerHTML = '<div class="spinner-border text-primary" role="status"></div>';
+            try {
+                const res = await fetch(`${API}/discount-codes/validate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({code})
+                });
+                const data = await res.json();
+                if (data.valid) {
+                    resultDiv.innerHTML = '<div class="alert alert-success">✅ تم تطبيق الخصم بنجاح</div>';
+                    showToast('تم تطبيق كود الخصم!', 'success');
+                } else {
+                    resultDiv.innerHTML = '<div class="alert alert-danger">❌ ' + (data.error || 'الكود غير صالح') + '</div>';
+                }
+            } catch (e) {
+                resultDiv.innerHTML = '<div class="alert alert-danger">فشل الاتصال بالخادم</div>';
+            }
+        }
+
+        // Campaigns
+        async function loadCampaigns() {
+            const container = document.getElementById('campaigns-container');
+            try {
+                const res = await fetch(`${API}/campaigns`);
+                const data = await res.json();
+                if (data.success && data.data.length > 0) {
+                    container.innerHTML = data.data.map(c => `
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5>${c.title}</h5>
+                                    <p>${c.description}</p>
+                                    <small class="text-muted">حتى ${new Date(c.end_date).toLocaleDateString('ar-EG')}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="col-12 text-muted">لا توجد حملات حالياً</div>';
+                }
+            } catch (e) { container.innerHTML = '<div class="col-12 text-muted">تعذر تحميل الحملات</div>'; }
+        }
+
+        function showToast(message, type = 'success') {
+            const bgClass = type === 'success' ? 'bg-success' : 'bg-warning';
+            const toastEl = document.createElement('div');
+            toastEl.className = `toast align-items-center text-bg-${type} border-0 show`;
+            toastEl.setAttribute('role', 'alert');
+            toastEl.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+            document.querySelector('.toast-container').appendChild(toastEl);
+            setTimeout(() => toastEl.remove(), 4000);
+        }
+
+        // Init
+        window.addEventListener('DOMContentLoaded', () => {
+            loadBanner();
+            loadPricing();
+            loadPromotions();
+            loadCampaigns();
+        });
+    </script>
 </body>
 </html>

@@ -85,7 +85,7 @@ db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
     }
 });
 
-// ---- إنشاء الجداول (مع معالجة الأخطاء) ----
+// ---- إنشاء الجداول الأساسية ----
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS devices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -149,12 +149,66 @@ db.serialize(() => {
         created_at TEXT
     )`);
 
+    // جداول العروض والحملات والإعلانات
+    db.run(`CREATE TABLE IF NOT EXISTS promotions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        discount_type TEXT,
+        discount_value REAL,
+        start_date TEXT,
+        end_date TEXT,
+        is_active INTEGER DEFAULT 1
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS campaigns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        image_url TEXT,
+        start_date TEXT,
+        end_date TEXT,
+        is_active INTEGER DEFAULT 1
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS banner (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message TEXT,
+        link_url TEXT,
+        is_active INTEGER DEFAULT 1
+    )`);
+
     // إعدادات افتراضية
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('trial_days', '14')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('sync_interval', '15')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('offline_grace_period', '90')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('subscription_prices', '{"monthly":1500,"quarterly":4000,"semiannual":7000,"annual":12000,"permanent":20000}')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('update_policy', 'optional')`);
+
+    // بيانات افتراضية للعروض والحملات إن لم تكن موجودة
+    db.get("SELECT COUNT(*) as count FROM promotions", (err, row) => {
+        if (row && row.count === 0) {
+            db.run(`INSERT INTO promotions (title, description, discount_type, discount_value, start_date, end_date) VALUES 
+                ('خصم رمضان 2026', 'خصم 20% على جميع الباقات السنوية', 'percent', 20, '2026-03-01', '2026-04-01'),
+                ('عرض الدخول المدرسي', 'خصم 30% للمدارس والمكتبات', 'percent', 30, '2026-09-01', '2026-10-01')
+            `);
+        }
+    });
+
+    db.get("SELECT COUNT(*) as count FROM campaigns", (err, row) => {
+        if (row && row.count === 0) {
+            db.run(`INSERT INTO campaigns (title, description, start_date, end_date) VALUES 
+                ('حملة رمضان', 'عروض خاصة لشهر رمضان المبارك', '2026-03-01', '2026-04-01'),
+                ('العودة للمدارس', 'تجهيز المكتبات بأفضل الأسعار', '2026-09-01', '2026-10-01')
+            `);
+        }
+    });
+
+    db.get("SELECT COUNT(*) as count FROM banner", (err, row) => {
+        if (row && row.count === 0) {
+            db.run(`INSERT INTO banner (message, link_url) VALUES ('🔥 اشترك سنوياً واحصل على شهر مجاني', '#pricing')`);
+        }
+    });
 });
 
 // ---- دوال مساعدة ----
@@ -167,7 +221,7 @@ function signPayload(payload) {
 // ====================== API Routes ======================
 
 app.get('/', (req, res) => {
-    res.send('✅ MCpos License Server is running.');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -428,6 +482,33 @@ app.post('/api/discount-codes/validate', (req, res) => {
         if (row.expires_at && new Date(row.expires_at) < new Date()) return res.json({ valid: false, error: 'منتهي الصلاحية' });
         if (row.max_uses && row.used_count >= row.max_uses) return res.json({ valid: false, error: 'تم استنفاذ الاستخدام' });
         res.json({ valid: true, discount: { type: row.type, value: row.value } });
+    });
+});
+
+// ================== العروض والحملات والإعلانات ==================
+
+// العروض النشطة
+app.get('/api/promotions/active', (req, res) => {
+    const now = new Date().toISOString().split('T')[0];
+    db.all('SELECT * FROM promotions WHERE is_active=1 AND start_date <= ? AND end_date >= ?', [now, now], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, data: rows });
+    });
+});
+
+// الحملات التسويقية
+app.get('/api/campaigns', (req, res) => {
+    db.all('SELECT * FROM campaigns WHERE is_active=1', [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, data: rows });
+    });
+});
+
+// شريط الإعلان العلوي
+app.get('/api/banner', (req, res) => {
+    db.get('SELECT * FROM banner WHERE is_active=1 ORDER BY id DESC LIMIT 1', [], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, data: row || null });
     });
 });
 
