@@ -462,7 +462,14 @@ setInterval(() => {
         }
     });
 }, 60 * 1000);
-
+// طباعة الجداول الموجودة في قاعدة البيانات عند بدء التشغيل
+db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
+    if (err) {
+        console.error('❌ خطأ في قراءة الجداول:', err.message);
+    } else {
+        console.log('📋 الجداول الموجودة:', tables.map(t => t.name).join(', '));
+    }
+});
 // ---- تشغيل الخادم ----
 app.listen(PORT, () => {
     console.log(`🚀 License Server running on port ${PORT}`);
