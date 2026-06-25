@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -304,11 +304,12 @@
                             <th>الحالة</th>
                             <th>تاريخ الانتهاء</th>
                             <th>كود الخصم</th>
+                            <th>آخر ظهور</th>
                             <th>إجراءات</th>
                         </tr>
                     </thead>
                     <tbody id="devicesTableBody">
-                        <tr><td colspan="6" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -503,14 +504,14 @@
                 updateStats(devices);
             } catch (e) {
                 document.getElementById('devicesTableBody').innerHTML = 
-                    '<tr><td colspan="6" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
+                    '<tr><td colspan="7" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
             }
         }
 
         function renderDevices(devices) {
             const tbody = document.getElementById('devicesTableBody');
             if (!devices || devices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
                 return;
             }
 
@@ -519,6 +520,7 @@
                 const expireDate = d.trial_end || d.subscription_end || '-';
                 const shopName = d.shop_name || '-';
                 const discountUsed = d.discount_code || '-';
+                const lastSeen = d.last_seen ? new Date(d.last_seen).toLocaleString('ar-EG') : '-';
 
                 return `
                     <tr>
@@ -527,6 +529,7 @@
                         <td>${statusBadge}</td>
                         <td>${expireDate}</td>
                         <td>${discountUsed}</td>
+                        <td>${lastSeen}</td>
                         <td class="device-actions">
                             <button class="btn btn-sm btn-success" onclick="activatePermanent('${d.hwid}')" title="تفعيل دائم">
                                 <i class="fas fa-infinity"></i>
