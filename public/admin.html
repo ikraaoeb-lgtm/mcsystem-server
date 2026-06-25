@@ -717,29 +717,32 @@
         }
 
         // ==================== دوال التحديثات ====================
+        let allUpdates = [];
+
         async function loadUpdates() {
             try {
                 const res = await fetch(API_UPDATES);
                 const data = await res.json();
-                const updates = data.data || [];
-                renderUpdates(updates);
+                allUpdates = data.data || [];
+                renderUpdates();
             } catch (e) {
                 document.getElementById('updatesTableBody').innerHTML = 
                     '<tr><td colspan="6" class="text-center text-danger py-4">فشل تحميل التحديثات</td></tr>';
             }
         }
 
-        function renderUpdates(updates) {
+        function renderUpdates() {
             const tbody = document.getElementById('updatesTableBody');
-            if (!updates || updates.length === 0) {
+            if (!allUpdates || allUpdates.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد تحديثات مرفوعة</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = updates.map(u => {
+            tbody.innerHTML = allUpdates.map(u => {
                 const typeBadge = u.required ? '<span class="badge bg-danger">إجباري</span>' : '<span class="badge bg-secondary">اختياري</span>';
                 const fileName = u.file_name || '-';
-                const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('ar-EG') : '-';
+                // عرض التاريخ والوقت معاً
+                const createdDate = u.created_at ? new Date(u.created_at).toLocaleString('ar-EG') : '-';
                 return `
                     <tr>
                         <td><strong>${u.version}</strong></td>
@@ -800,11 +803,22 @@
             xhr.onload = function() {
                 progressDiv.style.display = 'none';
                 if (xhr.status === 200) {
-                    alert('✅ تم رفع التحديث بنجاح');
-                    document.getElementById('updateVersion').value = '';
-                    document.getElementById('updateNotes').value = '';
-                    fileInput.value = '';
-                    loadUpdates();
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            alert('✅ تم رفع التحديث بنجاح');
+                            document.getElementById('updateVersion').value = '';
+                            document.getElementById('updateNotes').value = '';
+                            fileInput.value = '';
+                            // إعادة تحميل التحديثات لعرض الجديد
+                            loadUpdates();
+                        } else {
+                            alert('❌ فشل رفع التحديث: ' + (response.error || 'خطأ غير معروف'));
+                        }
+                    } catch (e) {
+                        alert('تم رفع الملف ولكن تعذر تحليل الرد');
+                        loadUpdates();
+                    }
                 } else {
                     try {
                         const err = JSON.parse(xhr.responseText);
