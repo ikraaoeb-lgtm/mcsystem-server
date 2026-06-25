@@ -7,197 +7,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #3b82f6;
-            --dark: #1e293b;
-            --light: #f8fafc;
-            --border: #e2e8f0;
+            --primary: #2563eb; --primary-dark: #1d4ed8; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --info: #3b82f6; --dark: #1e293b; --light: #f8fafc; --border: #e2e8f0;
             --card-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
-            --card-hover-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 10px -6px rgba(0,0,0,0.1);
         }
-
         * { font-family: 'Segoe UI', 'Tajawal', Tahoma, sans-serif; }
-
-        body {
-            background: #f1f5f9;
-            min-height: 100vh;
-            color: #334155;
-        }
-
-        .navbar {
-            background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 12px 0;
-            margin-bottom: 24px;
-            box-shadow: var(--card-shadow);
-        }
-
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.3rem;
-            color: var(--primary);
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border);
-            box-shadow: var(--card-shadow);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .stat-card:hover {
-            box-shadow: var(--card-hover-shadow);
-            transform: translateY(-1px);
-        }
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            color: white;
-        }
-        .stat-value {
-            font-size: 1.6rem;
-            font-weight: 700;
-            line-height: 1;
-        }
-        .stat-label {
-            font-size: 0.85rem;
-            color: #64748b;
-            margin-top: 4px;
-        }
-
-        .section-card {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid var(--border);
-            box-shadow: var(--card-shadow);
-        }
-        .section-title {
-            font-weight: 700;
-            font-size: 1.15rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        body { background: #f1f5f9; min-height: 100vh; color: #334155; }
+        .navbar { background: white; border-bottom: 1px solid var(--border); padding: 12px 0; margin-bottom: 24px; box-shadow: var(--card-shadow); }
+        .navbar-brand { font-weight: 700; font-size: 1.3rem; color: var(--primary); }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 15px; }
+        .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; }
+        .stat-label { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+        .section-card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; border: 1px solid var(--border); box-shadow: var(--card-shadow); }
+        .section-title { font-weight: 700; font-size: 1.15rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         .section-title i { color: var(--primary); }
-
-        .table {
-            margin-bottom: 0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .table thead th {
-            background: #f8fafc;
-            border-bottom: 2px solid var(--border);
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #475569;
-            padding: 12px;
-        }
-        .table tbody td {
-            padding: 10px 12px;
-            font-size: 0.9rem;
-            vertical-align: middle;
-        }
-        .table tbody tr:hover {
-            background: #f8fafc;
-        }
-
-        .btn {
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            padding: 6px 14px;
-            transition: all 0.15s;
-        }
-        .btn-primary {
-            background: var(--primary);
-            border-color: var(--primary);
-        }
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            border-color: var(--primary-dark);
-        }
-
-        .badge {
-            font-size: 0.8rem;
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-weight: 500;
-        }
-
-        .form-control, .form-select {
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            padding: 8px 12px;
-            font-size: 0.9rem;
-        }
-        .form-label {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #475569;
-            margin-bottom: 4px;
-        }
-
-        .prices-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-        .price-card {
-            background: #f8fafc;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        .price-card:hover {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-        }
-        .price-card h5 {
-            font-size: 0.9rem;
-            color: #64748b;
-            margin-bottom: 8px;
-        }
-        .price-card .price-input {
-            border: none;
-            background: transparent;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--dark);
-            width: 100%;
-            text-align: center;
-            outline: none;
-        }
-        .price-card .currency {
-            font-size: 0.85rem;
-            color: #94a3b8;
-            margin-top: 4px;
-        }
-
-        .progress {
-            height: 20px;
-            display: none;
-            margin-top: 10px;
-        }
+        .table thead th { background: #f8fafc; font-weight: 600; font-size: 0.9rem; color: #475569; padding: 12px; }
+        .table tbody td { padding: 10px 12px; font-size: 0.9rem; vertical-align: middle; }
+        .btn { border-radius: 8px; font-weight: 500; font-size: 0.85rem; padding: 6px 14px; }
+        .btn-primary { background: var(--primary); border-color: var(--primary); }
+        .badge { font-size: 0.8rem; padding: 5px 10px; border-radius: 6px; font-weight: 500; }
+        .form-control, .form-select { border-radius: 8px; border: 1px solid var(--border); padding: 8px 12px; font-size: 0.9rem; }
+        .progress { height: 20px; display: none; margin-top: 10px; }
+        .price-input { border: none; background: transparent; font-size: 1.5rem; font-weight: 700; color: var(--dark); width: 100%; text-align: center; outline: none; }
     </style>
 </head>
 <body>
@@ -208,11 +40,11 @@
     </div>
 
     <div class="container-fluid">
-        <!-- إحصائيات سريعة -->
-        <div class="row g-3 mb-4" id="statsRow">
+        <!-- إحصائيات -->
+        <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--primary);"><i class="fas fa-laptop"></i></div>
+                    <div class="stat-icon" style="background:var(--primary)"><i class="fas fa-laptop"></i></div>
                     <div>
                         <div class="stat-value" id="totalDevices">-</div>
                         <div class="stat-label">إجمالي الأجهزة</div>
@@ -221,7 +53,7 @@
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--success);"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-icon" style="background:var(--success)"><i class="fas fa-check-circle"></i></div>
                     <div>
                         <div class="stat-value" id="activeDevices">-</div>
                         <div class="stat-label">المفعلة</div>
@@ -230,7 +62,7 @@
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--warning);"><i class="fas fa-clock"></i></div>
+                    <div class="stat-icon" style="background:var(--warning)"><i class="fas fa-clock"></i></div>
                     <div>
                         <div class="stat-value" id="trialDevices">-</div>
                         <div class="stat-label">تجريبي</div>
@@ -239,7 +71,7 @@
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--danger);"><i class="fas fa-ban"></i></div>
+                    <div class="stat-icon" style="background:var(--danger)"><i class="fas fa-ban"></i></div>
                     <div>
                         <div class="stat-value" id="blockedDevices">-</div>
                         <div class="stat-label">محظور / منتهي</div>
@@ -248,121 +80,284 @@
             </div>
         </div>
 
-        <!-- ==================== قسم إدارة الأسعار ==================== -->
+        <!-- الأسعار -->
         <div class="section-card">
             <div class="section-title"><i class="fas fa-money-bill-wave"></i> إدارة أسعار الاشتراكات</div>
-            <div class="prices-grid">
-                <div class="price-card"><h5><i class="far fa-calendar-alt me-1"></i> ربع سنوي</h5><input type="number" id="price_quarterly" class="price-input" step="0.01"><div class="currency">د.ج</div></div>
-                <div class="price-card"><h5><i class="far fa-calendar-alt me-1"></i> نصف سنوي</h5><input type="number" id="price_semiannual" class="price-input" step="0.01"><div class="currency">د.ج</div></div>
-                <div class="price-card"><h5><i class="far fa-calendar-alt me-1"></i> سنوي</h5><input type="number" id="price_annual" class="price-input" step="0.01"><div class="currency">د.ج</div></div>
-                <div class="price-card"><h5><i class="fas fa-infinity me-1"></i> دائم</h5><input type="number" id="price_permanent" class="price-input" step="0.01"><div class="currency">د.ج</div></div>
+            <div class="row">
+                <div class="col-md-3"><label class="form-label">ربع سنوي</label><input type="number" id="price_quarterly" class="form-control price-input" step="0.01"></div>
+                <div class="col-md-3"><label class="form-label">نصف سنوي</label><input type="number" id="price_semiannual" class="form-control price-input" step="0.01"></div>
+                <div class="col-md-3"><label class="form-label">سنوي</label><input type="number" id="price_annual" class="form-control price-input" step="0.01"></div>
+                <div class="col-md-3"><label class="form-label">دائم</label><input type="number" id="price_permanent" class="form-control price-input" step="0.01"></div>
             </div>
-            <button class="btn btn-primary" onclick="savePrices()"><i class="fas fa-save me-2"></i> حفظ الأسعار</button>
+            <button class="btn btn-primary mt-3" onclick="savePrices()"><i class="fas fa-save me-2"></i>حفظ الأسعار</button>
             <small class="text-muted d-block mt-2">يتم تطبيق الأسعار الجديدة على عمليات الشراء المستقبلية فقط.</small>
         </div>
 
-        <!-- ==================== قسم الأجهزة ==================== -->
+        <!-- الأجهزة -->
         <div class="section-card">
-            <div class="section-title"><i class="fas fa-laptop"></i> الأجهزة المسجلة</div>
-            <button class="btn btn-primary mb-3" onclick="loadDevices()"><i class="fas fa-sync-alt me-2"></i>تحديث القائمة</button>
+            <div class="section-title"><i class="fas fa-laptop"></i> الأجهزة المسجلة <button class="btn btn-primary btn-sm ms-3" onclick="loadDevices()"><i class="fas fa-sync-alt me-2"></i>تحديث القائمة</button></div>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle">
-                    <thead><tr><th>اسم المتجر</th><th>HWID</th><th>الحالة</th><th>تاريخ الانتهاء</th><th>كود الخصم</th><th>آخر ظهور</th><th>إجراءات</th></tr></thead>
-                    <tbody id="devicesTableBody"><tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>اسم المتجر</th>
+                            <th>HWID</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>كود الخصم</th>
+                            <th>آخر ظهور</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="devicesTableBody">
+                        <tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ==================== قسم أكواد الخصم ==================== -->
+        <!-- أكواد الخصم -->
         <div class="section-card">
             <div class="section-title"><i class="fas fa-tags"></i> إدارة أكواد الخصم</div>
-            <div class="row g-3 mb-4 p-3" style="background:#f8fafc; border-radius:12px;">
-                <div class="col-md-2"><label class="form-label">الكود</label><input type="text" id="discountCode" class="form-control" placeholder="مثال: SAVE20"></div>
-                <div class="col-md-2"><label class="form-label">النوع</label><select id="discountType" class="form-select"><option value="percent">نسبة مئوية</option><option value="fixed">مبلغ ثابت</option><option value="trial_extend">تمديد التجربة</option><option value="subscription_extend">تمديد الاشتراك</option></select></div>
-                <div class="col-md-2"><label class="form-label">القيمة</label><input type="number" id="discountValue" class="form-control" placeholder="مثال: 20"></div>
-                <div class="col-md-2"><label class="form-label">تاريخ الانتهاء</label><input type="date" id="discountExpiry" class="form-control"></div>
-                <div class="col-md-2"><label class="form-label">عدد مرات الاستخدام</label><input type="number" id="discountMaxUses" class="form-control" value="100"></div>
-                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-success w-100" onclick="addDiscountCode()"><i class="fas fa-plus me-1"></i> إضافة</button></div>
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: 12px;">
+                <div class="col-md-2">
+                    <label class="form-label">الكود</label>
+                    <input type="text" id="discountCode" class="form-control" placeholder="مثال: SAVE20">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">النوع</label>
+                    <select id="discountType" class="form-select">
+                        <option value="percent">نسبة مئوية</option>
+                        <option value="fixed">مبلغ ثابت</option>
+                        <option value="trial_extend">تمديد التجربة</option>
+                        <option value="subscription_extend">تمديد الاشتراك</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">القيمة</label>
+                    <input type="number" id="discountValue" class="form-control" placeholder="مثال: 20">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">تاريخ الانتهاء</label>
+                    <input type="date" id="discountExpiry" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">عدد مرات الاستخدام</label>
+                    <input type="number" id="discountMaxUses" class="form-control" value="100">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-success w-100" onclick="addDiscountCode()">
+                        <i class="fas fa-plus me-1"></i> إضافة
+                    </button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle">
-                    <thead><tr><th>الكود</th><th>النوع</th><th>القيمة</th><th>تاريخ الانتهاء</th><th>الاستخدامات</th><th>المستخدم</th><th></th></tr></thead>
-                    <tbody id="discountCodesTableBody"><tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>النوع</th>
+                            <th>القيمة</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>الاستخدامات</th>
+                            <th>المستخدم</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="discountCodesTableBody">
+                        <tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ==================== قسم إدارة التحديثات ==================== -->
+        <!-- التحديثات -->
         <div class="section-card">
             <div class="section-title"><i class="fas fa-cloud-upload-alt"></i> إدارة التحديثات</div>
-            <div class="row g-3 mb-4 p-3" style="background:#f8fafc; border-radius:12px;">
-                <div class="col-md-2"><label class="form-label">رقم الإصدار *</label><input type="text" id="updateVersion" class="form-control" placeholder="مثال: 1.2.0"></div>
-                <div class="col-md-2"><label class="form-label">نوع التحديث</label><select id="updateRequired" class="form-select"><option value="0">اختياري</option><option value="1">إجباري</option></select></div>
-                <div class="col-md-4"><label class="form-label">ملاحظات التحديث</label><input type="text" id="updateNotes" class="form-control" placeholder="ما الجديد..."></div>
-                <div class="col-md-2"><label class="form-label">ملف التحديث</label><input type="file" id="updateFile" class="form-control" accept=".exe,.msi,.zip,.dmg"></div>
-                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-success w-100" onclick="uploadUpdate()"><i class="fas fa-upload me-1"></i> رفع التحديث</button></div>
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: 12px;">
+                <div class="col-md-2">
+                    <label class="form-label">رقم الإصدار *</label>
+                    <input type="text" id="updateVersion" class="form-control" placeholder="مثال: 1.2.0">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">نوع التحديث</label>
+                    <select id="updateRequired" class="form-select">
+                        <option value="0">اختياري</option>
+                        <option value="1">إجباري</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">ملاحظات التحديث</label>
+                    <input type="text" id="updateNotes" class="form-control" placeholder="ما الجديد في هذا الإصدار...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">ملف التحديث</label>
+                    <input type="file" id="updateFile" class="form-control" accept=".exe,.msi,.zip,.dmg">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-success w-100" onclick="uploadUpdate()">
+                        <i class="fas fa-upload me-1"></i> رفع التحديث
+                    </button>
+                </div>
             </div>
-            <div class="progress" id="uploadProgress"><div class="progress-bar" role="progressbar" style="width:0%">0%</div></div>
+            <div class="progress" id="uploadProgress">
+                <div class="progress-bar" role="progressbar" style="width:0%">0%</div>
+            </div>
             <div class="table-responsive mt-3">
                 <table class="table table-bordered table-hover align-middle">
-                    <thead><tr><th>الإصدار</th><th>النوع</th><th>ملاحظات</th><th>الملف</th><th>تاريخ الرفع</th><th></th></tr></thead>
-                    <tbody id="updatesTableBody"><tr><td colspan="6" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>الإصدار</th>
+                            <th>النوع</th>
+                            <th>ملاحظات</th>
+                            <th>الملف</th>
+                            <th>تاريخ الرفع</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="updatesTableBody">
+                        <tr><td colspan="6" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ==================== قسم إدارة العروض ==================== -->
+        <!-- العروض -->
         <div class="section-card">
             <div class="section-title"><i class="fas fa-percent"></i> إدارة العروض الترويجية</div>
-            <div class="row g-3 mb-4 p-3" style="background:#f8fafc; border-radius:12px;">
-                <div class="col-md-3"><label class="form-label">العنوان</label><input type="text" id="promoTitle" class="form-control" placeholder="اسم العرض"></div>
-                <div class="col-md-3"><label class="form-label">الوصف</label><input type="text" id="promoDesc" class="form-control" placeholder="وصف مختصر"></div>
-                <div class="col-md-2"><label class="form-label">نوع الخصم</label><select id="promoType" class="form-select"><option value="percent">نسبة</option><option value="fixed">مبلغ</option></select></div>
-                <div class="col-md-2"><label class="form-label">قيمة الخصم</label><input type="number" id="promoValue" class="form-control" step="0.01"></div>
-                <div class="col-md-2"><label class="form-label">تاريخ البداية</label><input type="date" id="promoStart" class="form-control"></div>
-                <div class="col-md-2"><label class="form-label">تاريخ النهاية</label><input type="date" id="promoEnd" class="form-control"></div>
-                <div class="col-12 d-flex align-items-end"><button class="btn btn-success" onclick="addPromotion()"><i class="fas fa-plus me-1"></i> إضافة عرض</button></div>
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: 12px;">
+                <div class="col-md-3">
+                    <label class="form-label">العنوان</label>
+                    <input type="text" id="promoTitle" class="form-control" placeholder="اسم العرض">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">الوصف</label>
+                    <input type="text" id="promoDesc" class="form-control" placeholder="وصف مختصر">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">نوع الخصم</label>
+                    <select id="promoType" class="form-select">
+                        <option value="percent">نسبة</option>
+                        <option value="fixed">مبلغ</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">قيمة الخصم</label>
+                    <input type="number" id="promoValue" class="form-control" step="0.01">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">تاريخ البداية</label>
+                    <input type="date" id="promoStart" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">تاريخ النهاية</label>
+                    <input type="date" id="promoEnd" class="form-control">
+                </div>
+                <div class="col-12 d-flex align-items-end">
+                    <button class="btn btn-success" onclick="addPromotion()"><i class="fas fa-plus me-1"></i> إضافة عرض</button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle">
-                    <thead><tr><th>العنوان</th><th>الوصف</th><th>الخصم</th><th>البداية</th><th>النهاية</th><th></th></tr></thead>
-                    <tbody id="promotionsTableBody"><tr><td colspan="6" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>العنوان</th>
+                            <th>الوصف</th>
+                            <th>الخصم</th>
+                            <th>البداية</th>
+                            <th>النهاية</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="promotionsTableBody">
+                        <tr><td colspan="6" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ==================== قسم إدارة الحملات ==================== -->
+        <!-- الحملات -->
         <div class="section-card">
             <div class="section-title"><i class="fas fa-bullhorn"></i> إدارة الحملات التسويقية</div>
-            <div class="row g-3 mb-4 p-3" style="background:#f8fafc; border-radius:12px;">
-                <div class="col-md-3"><label class="form-label">العنوان</label><input type="text" id="campTitle" class="form-control" placeholder="اسم الحملة"></div>
-                <div class="col-md-3"><label class="form-label">الوصف</label><input type="text" id="campDesc" class="form-control" placeholder="وصف الحملة"></div>
-                <div class="col-md-2"><label class="form-label">تاريخ البداية</label><input type="date" id="campStart" class="form-control"></div>
-                <div class="col-md-2"><label class="form-label">تاريخ النهاية</label><input type="date" id="campEnd" class="form-control"></div>
-                <div class="col-12 d-flex align-items-end"><button class="btn btn-success" onclick="addCampaign()"><i class="fas fa-plus me-1"></i> إضافة حملة</button></div>
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: 12px;">
+                <div class="col-md-3">
+                    <label class="form-label">العنوان</label>
+                    <input type="text" id="campTitle" class="form-control" placeholder="اسم الحملة">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">الوصف</label>
+                    <input type="text" id="campDesc" class="form-control" placeholder="وصف الحملة">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">تاريخ البداية</label>
+                    <input type="date" id="campStart" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">تاريخ النهاية</label>
+                    <input type="date" id="campEnd" class="form-control">
+                </div>
+                <div class="col-12 d-flex align-items-end">
+                    <button class="btn btn-success" onclick="addCampaign()"><i class="fas fa-plus me-1"></i> إضافة حملة</button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle">
-                    <thead><tr><th>العنوان</th><th>الوصف</th><th>البداية</th><th>النهاية</th><th></th></tr></thead>
-                    <tbody id="campaignsTableBody"><tr><td colspan="5" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>العنوان</th>
+                            <th>الوصف</th>
+                            <th>البداية</th>
+                            <th>النهاية</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="campaignsTableBody">
+                        <tr><td colspan="5" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ==================== قسم إدارة الشريط العلوي ==================== -->
+        <!-- الشريط العلوي -->
         <div class="section-card">
             <div class="section-title"><i class="fas fa-flag"></i> شريط الإعلان العلوي</div>
-            <div class="row g-3 mb-4 p-3" style="background:#f8fafc; border-radius:12px;">
-                <div class="col-md-4"><label class="form-label">نص الرسالة</label><input type="text" id="bannerMessage" class="form-control" placeholder="مثال: 🔥 خصم 20% اليوم"></div>
-                <div class="col-md-2"><label class="form-label">الرابط</label><input type="text" id="bannerLink" class="form-control" placeholder="#pricing"></div>
-                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-success w-100" onclick="updateBanner()"><i class="fas fa-save me-1"></i> تحديث الشريط</button></div>
-                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-danger w-100" onclick="removeBanner()"><i class="fas fa-trash me-1"></i> إخفاء الشريط</button></div>
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: 12px;">
+                <div class="col-md-4">
+                    <label class="form-label">نص الرسالة</label>
+                    <input type="text" id="bannerMessage" class="form-control" placeholder="مثال: 🔥 خصم 20% اليوم">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">الرابط</label>
+                    <input type="text" id="bannerLink" class="form-control" placeholder="#pricing">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-success w-100" onclick="updateBanner()"><i class="fas fa-save me-1"></i> تحديث الشريط</button>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-outline-danger w-100" onclick="removeBanner()"><i class="fas fa-trash me-1"></i> إخفاء الشريط</button>
+                </div>
             </div>
             <div class="alert alert-info" id="currentBanner">جاري تحميل الشريط الحالي...</div>
         </div>
     </div>
 
     <script>
+        // ==================== دوال تنسيق التاريخ والأرقام ====================
+        const MONTHS_LOCAL = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+        function toEnglishDigits(str) { return String(str).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)); }
+        function formatDateLocale(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '-';
+            const day = toEnglishDigits(String(d.getDate()).padStart(2,'0'));
+            const month = MONTHS_LOCAL[d.getMonth()];
+            const year = toEnglishDigits(d.getFullYear());
+            const hours = toEnglishDigits(String(d.getHours()).padStart(2,'0'));
+            const minutes = toEnglishDigits(String(d.getMinutes()).padStart(2,'0'));
+            return `${day} ${month} ${year} ${hours}:${minutes}`;
+        }
+
+        // ==================== API ====================
         const API_DEVICES = '/api/devices';
         const API_DISCOUNT = '/api/discount-codes';
         const API_SETTINGS = '/api/settings';
@@ -371,12 +366,7 @@
         const API_CAMPAIGNS = '/api/campaigns';
         const API_BANNER = '/api/banner';
 
-        document.addEventListener('DOMContentLoaded', () => loadAll());
-
-        async function loadAll() {
-            await Promise.all([loadDevices(), loadDiscountCodes(), loadPrices(), loadUpdates(), loadPromotions(), loadCampaigns(), loadBanner()]);
-        }
-
+        // ==================== دوال عامة ====================
         function updateStats(devices) {
             document.getElementById('totalDevices').textContent = devices.length;
             document.getElementById('activeDevices').textContent = devices.filter(d => d.status === 'activated').length;
@@ -390,21 +380,26 @@
                 const res = await fetch(API_SETTINGS);
                 const data = await res.json();
                 if (data.success && data.data) {
-                    const prices = data.data.subscription_prices || {};
-                    document.getElementById('price_quarterly').value = prices.quarterly || 0;
-                    document.getElementById('price_semiannual').value = prices.semiannual || 0;
-                    document.getElementById('price_annual').value = prices.annual || 0;
-                    document.getElementById('price_permanent').value = prices.permanent || 0;
+                    const p = data.data.subscription_prices || {};
+                    document.getElementById('price_quarterly').value = p.quarterly || 0;
+                    document.getElementById('price_semiannual').value = p.semiannual || 0;
+                    document.getElementById('price_annual').value = p.annual || 0;
+                    document.getElementById('price_permanent').value = p.permanent || 0;
                 }
             } catch (e) { console.error(e); }
         }
 
         async function savePrices() {
-            const prices = { quarterly: parseFloat(document.getElementById('price_quarterly').value)||0, semiannual: parseFloat(document.getElementById('price_semiannual').value)||0, annual: parseFloat(document.getElementById('price_annual').value)||0, permanent: parseFloat(document.getElementById('price_permanent').value)||0 };
+            const prices = {
+                quarterly: parseFloat(document.getElementById('price_quarterly').value)||0,
+                semiannual: parseFloat(document.getElementById('price_semiannual').value)||0,
+                annual: parseFloat(document.getElementById('price_annual').value)||0,
+                permanent: parseFloat(document.getElementById('price_permanent').value)||0
+            };
             try {
                 const res = await fetch(API_SETTINGS, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({subscription_prices: prices}) });
-                if (res.ok) alert('✅ تم حفظ الأسعار'); else alert('❌ فشل الحفظ');
-            } catch (e) { alert('❌ فشل الاتصال'); }
+                if (res.ok) alert('✅ تم حفظ الأسعار بنجاح'); else alert('❌ فشل حفظ الأسعار');
+            } catch (e) { alert('❌ فشل الاتصال بالخادم'); }
         }
 
         // ==================== الأجهزة ====================
@@ -414,23 +409,36 @@
                 const devices = await res.json();
                 renderDevices(devices);
                 updateStats(devices);
-            } catch (e) { document.getElementById('devicesTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>'; }
+            } catch (e) {
+                document.getElementById('devicesTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
+            }
         }
 
         function renderDevices(devices) {
             const tbody = document.getElementById('devicesTableBody');
-            if (!devices || devices.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">لا توجد أجهزة</td></tr>'; return; }
+            if (!devices || devices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
+                return;
+            }
             tbody.innerHTML = devices.map(d => {
                 const badge = getStatusBadge(d.status);
                 const exp = d.trial_end || d.subscription_end || '-';
-                const last = d.last_seen ? new Date(d.last_seen).toLocaleString('ar-EG') : '-';
-                return `<tr><td>${d.shop_name||'-'}</td><td><code>${d.hwid}</code></td><td>${badge}</td><td>${exp}</td><td>${d.discount_code||'-'}</td><td>${last}</td><td>
-                    <button class="btn btn-sm btn-success" onclick="activatePermanent('${d.hwid}')"><i class="fas fa-infinity"></i></button>
-                    <button class="btn btn-sm btn-info" onclick="activateSubscription('${d.hwid}',12)"><i class="far fa-calendar-check"></i></button>
-                    <button class="btn btn-sm btn-warning" onclick="extendTrial('${d.hwid}')"><i class="fas fa-clock"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="blockDevice('${d.hwid}')"><i class="fas fa-ban"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteDevice('${d.hwid}')"><i class="fas fa-trash"></i></button>
-                </td></tr>`;
+                const last = formatDateLocale(d.last_seen);
+                return `<tr>
+                    <td>${d.shop_name||'-'}</td>
+                    <td><code>${d.hwid}</code></td>
+                    <td>${badge}</td>
+                    <td>${d.trial_end||d.subscription_end||'-'}</td>
+                    <td>${d.discount_code||'-'}</td>
+                    <td>${last}</td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="activatePermanent('${d.hwid}')"><i class="fas fa-infinity"></i></button>
+                        <button class="btn btn-sm btn-info" onclick="activateSubscription('${d.hwid}',12)"><i class="far fa-calendar-check"></i></button>
+                        <button class="btn btn-sm btn-warning" onclick="extendTrial('${d.hwid}')"><i class="fas fa-clock"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="blockDevice('${d.hwid}')"><i class="fas fa-ban"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDevice('${d.hwid}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
             }).join('');
         }
 
@@ -440,17 +448,17 @@
             return `<span class="badge ${m[s]||'bg-light text-dark'}">${l[s]||s}</span>`;
         }
 
-        async function activatePermanent(h) { await fetch(`${API_DEVICES}/${h}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'activated', activation_type:'permanent'}) }); loadDevices(); }
-        async function activateSubscription(h,m) { await fetch(`${API_DEVICES}/${h}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'activated', activation_type:'subscription', subscription_months:m}) }); loadDevices(); }
-        async function extendTrial(h) { await fetch(`${API_DEVICES}/${h}/extend-trial`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({days:14}) }); loadDevices(); }
-        async function blockDevice(h) { await fetch(`${API_DEVICES}/${h}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'blocked'}) }); loadDevices(); }
-        async function deleteDevice(h) { if(!confirm(`حذف ${h}؟`)) return; await fetch(`${API_DEVICES}/${h}`, { method:'DELETE' }); loadDevices(); }
+        async function activatePermanent(hwid) { await fetch(`${API_DEVICES}/${hwid}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'activated', activation_type:'permanent'}) }); loadDevices(); }
+        async function activateSubscription(hwid, months) { await fetch(`${API_DEVICES}/${hwid}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'activated', activation_type:'subscription', subscription_months:months}) }); loadDevices(); }
+        async function extendTrial(hwid) { await fetch(`${API_DEVICES}/${hwid}/extend-trial`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({days:14}) }); loadDevices(); }
+        async function blockDevice(hwid) { await fetch(`${API_DEVICES}/${hwid}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'blocked'}) }); loadDevices(); }
+        async function deleteDevice(hwid) { if(!confirm(`هل أنت متأكد من حذف الجهاز "${hwid}"؟`)) return; await fetch(`${API_DEVICES}/${hwid}`, { method:'DELETE' }); loadDevices(); }
 
         // ==================== أكواد الخصم ====================
-        async function loadDiscountCodes() { try { const r = await fetch(API_DISCOUNT); const d = await r.json(); renderDiscountCodes(d.data||[]); } catch(e) { document.getElementById('discountCodesTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">فشل التحميل</td></tr>'; } }
+        async function loadDiscountCodes() { try { const r = await fetch(API_DISCOUNT); const d = await r.json(); renderDiscountCodes(d.data||[]); } catch(e) { document.getElementById('discountCodesTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>'; } }
         function renderDiscountCodes(codes) {
             const t = document.getElementById('discountCodesTableBody');
-            if(!codes.length) { t.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">لا توجد أكواد</td></tr>'; return; }
+            if(!codes.length) { t.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">لا توجد أكواد خصم</td></tr>'; return; }
             t.innerHTML = codes.map(c => `<tr><td><strong>${c.code}</strong></td><td>${c.type}</td><td>${c.value||'-'}</td><td>${c.expires_at||'-'}</td><td>${c.max_uses||'-'}</td><td>${c.used_count||0}</td><td><button class="btn btn-sm btn-danger" onclick="deleteDiscountCode('${c.code}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
         }
         async function addDiscountCode() {
@@ -459,33 +467,31 @@
             const value = parseFloat(document.getElementById('discountValue').value)||0;
             const expires_at = document.getElementById('discountExpiry').value||null;
             const max_uses = parseInt(document.getElementById('discountMaxUses').value)||100;
-            if(!code) return alert('أدخل الكود');
+            if(!code) return alert('يرجى إدخال الكود');
             try {
                 const r = await fetch(API_DISCOUNT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({code,type,value,expires_at,max_uses}) });
-                if(r.ok) { alert('تمت الإضافة'); loadDiscountCodes(); } else { const e = await r.json(); alert('فشل: '+e.error); }
-            } catch(e) { alert('فشل الاتصال'); }
+                if(r.ok) { alert('تم إضافة كود الخصم بنجاح'); loadDiscountCodes(); } else { const e = await r.json(); alert('فشل إضافة الكود: '+e.error); }
+            } catch(e) { alert('فشل الاتصال بالخادم'); }
         }
-        async function deleteDiscountCode(c) { if(!confirm(`حذف ${c}؟`)) return; await fetch(`${API_DISCOUNT}/${c}`, { method:'DELETE' }); loadDiscountCodes(); }
+        async function deleteDiscountCode(c) { if(!confirm(`هل أنت متأكد من حذف الكود "${c}"؟`)) return; await fetch(`${API_DISCOUNT}/${c}`, { method:'DELETE' }); loadDiscountCodes(); }
 
         // ==================== التحديثات ====================
         async function loadUpdates() {
             const t = document.getElementById('updatesTableBody');
             try {
-                const r = await fetch(API_UPDATES);
-                const d = await r.json();
-                const u = d.data||[];
-                if(!u.length) t.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد تحديثات</td></tr>';
+                const r = await fetch(API_UPDATES); const d = await r.json(); const u = d.data||[];
+                if(!u.length) t.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد تحديثات مرفوعة</td></tr>';
                 else renderUpdates(u);
-            } catch(e) { t.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">فشل التحميل</td></tr>'; }
+            } catch(e) { t.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">فشل تحميل التحديثات (خطأ شبكة)</td></tr>'; }
         }
-        function renderUpdates(u) { document.getElementById('updatesTableBody').innerHTML = u.map(x => `<tr><td><strong>${x.version}</strong></td><td>${x.required?'<span class="badge bg-danger">إجباري</span>':'<span class="badge bg-secondary">اختياري</span>'}</td><td>${x.notes||'-'}</td><td>${x.file_name||'-'}</td><td>${x.created_at?new Date(x.created_at).toLocaleString('ar-EG'):'-'}</td><td><button class="btn btn-sm btn-danger" onclick="deleteUpdate('${x.version}')"><i class="fas fa-trash"></i></button></td></tr>`).join(''); }
+        function renderUpdates(u) { document.getElementById('updatesTableBody').innerHTML = u.map(x => `<tr><td><strong>${x.version}</strong></td><td>${x.required?'<span class="badge bg-danger">إجباري</span>':'<span class="badge bg-secondary">اختياري</span>'}</td><td>${x.notes||'-'}</td><td>${x.file_name||'-'}</td><td>${formatDateLocale(x.created_at)}</td><td><button class="btn btn-sm btn-danger" onclick="deleteUpdate('${x.version}')"><i class="fas fa-trash"></i></button></td></tr>`).join(''); }
         function uploadUpdate() {
             const v = document.getElementById('updateVersion').value.trim();
             const req = document.getElementById('updateRequired').value;
             const n = document.getElementById('updateNotes').value.trim();
             const f = document.getElementById('updateFile').files[0];
-            if(!v) return alert('رقم الإصدار مطلوب');
-            if(!f) return alert('اختر ملفاً');
+            if(!v) return alert('يرجى إدخال رقم الإصدار');
+            if(!f) return alert('يرجى اختيار ملف التحديث');
             const fd = new FormData(); fd.append('version',v); fd.append('required',req); fd.append('notes',n); fd.append('update_file',f);
             const pb = document.querySelector('#uploadProgress .progress-bar');
             document.getElementById('uploadProgress').style.display='block';
@@ -493,17 +499,30 @@
             xhr.upload.onprogress = e => { if(e.lengthComputable) { const p = Math.round(e.loaded/e.total*100); pb.style.width=p+'%'; pb.textContent=p+'%'; } };
             xhr.onload = () => {
                 document.getElementById('uploadProgress').style.display='none';
-                if(xhr.status===200) { alert('✅ تم الرفع'); setTimeout(loadUpdates, 600); }
-                else { try { const e = JSON.parse(xhr.responseText); alert('❌ '+e.error); } catch(_) { alert('❌ فشل الرفع'); } }
+                if(xhr.status===200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if(response.success) {
+                            alert('✅ تم رفع التحديث بنجاح');
+                            document.getElementById('updateVersion').value='';
+                            document.getElementById('updateNotes').value='';
+                            document.getElementById('updateFile').value='';
+                            setTimeout(() => loadUpdates(), 600);
+                        } else {
+                            alert('❌ فشل رفع التحديث: ' + (response.error || 'خطأ غير معروف'));
+                        }
+                    } catch(e) { alert('تم رفع الملف ولكن تعذر تحليل الرد'); setTimeout(() => loadUpdates(), 500); }
+                }
+                else { try { const e = JSON.parse(xhr.responseText); alert('❌ '+e.error); } catch(_) { alert('❌ فشل رفع التحديث (استجابة غير صالحة)'); } }
             };
-            xhr.onerror = () => { document.getElementById('uploadProgress').style.display='none'; alert('❌ تعذر الاتصال'); };
+            xhr.onerror = () => { document.getElementById('uploadProgress').style.display='none'; alert('❌ تعذر الاتصال بالخادم'); };
             xhr.send(fd);
         }
-        async function deleteUpdate(v) { if(!confirm(`حذف ${v}؟`)) return; await fetch(`${API_UPDATES}/${v}`, { method:'DELETE' }); loadUpdates(); }
+        async function deleteUpdate(v) { if(!confirm(`هل أنت متأكد من حذف التحديث "${v}"؟`)) return; await fetch(`${API_UPDATES}/${v}`, { method:'DELETE' }); loadUpdates(); }
 
         // ==================== العروض ====================
-        async function loadPromotions() { try { const r = await fetch(API_PROMOTIONS); const d = await r.json(); renderPromotions(d.data||[]); } catch(e) { document.getElementById('promotionsTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">فشل التحميل</td></tr>'; } }
-        function renderPromotions(p) { const t = document.getElementById('promotionsTableBody'); if(!p.length) { t.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد عروض</td></tr>'; return; } t.innerHTML = p.map(x => `<tr><td>${x.title}</td><td>${x.description||'-'}</td><td>${x.discount_type==='percent'?x.discount_value+'%':x.discount_value+' د.ج'}</td><td>${x.start_date}</td><td>${x.end_date}</td><td><button class="btn btn-sm btn-danger" onclick="deletePromotion(${x.id})"><i class="fas fa-trash"></i></button></td></tr>`).join(''); }
+        async function loadPromotions() { try { const r = await fetch(API_PROMOTIONS); const d = await r.json(); renderPromotions(d.data||[]); } catch(e) { document.getElementById('promotionsTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>'; } }
+        function renderPromotions(p) { const t = document.getElementById('promotionsTableBody'); if(!p.length) { t.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد عروض ترويجية</td></tr>'; return; } t.innerHTML = p.map(x => `<tr><td>${x.title}</td><td>${x.description||'-'}</td><td>${x.discount_type==='percent'?x.discount_value+'%':x.discount_value+' د.ج'}</td><td>${x.start_date}</td><td>${x.end_date}</td><td><button class="btn btn-sm btn-danger" onclick="deletePromotion(${x.id})"><i class="fas fa-trash"></i></button></td></tr>`).join(''); }
         async function addPromotion() {
             const t = document.getElementById('promoTitle').value.trim();
             const d = document.getElementById('promoDesc').value.trim();
@@ -511,29 +530,29 @@
             const val = parseFloat(document.getElementById('promoValue').value)||0;
             const start = document.getElementById('promoStart').value;
             const end = document.getElementById('promoEnd').value;
-            if(!t||!start||!end) return alert('املأ الحقول المطلوبة');
+            if(!t||!start||!end) return alert('يرجى ملء الحقول المطلوبة');
             try {
                 const r = await fetch(API_PROMOTIONS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title:t,description:d,discount_type:type,discount_value:val,start_date:start,end_date:end}) });
-                if(r.ok) { alert('تمت الإضافة'); loadPromotions(); } else { const e = await r.json(); alert('فشل: '+e.error); }
-            } catch(e) { alert('فشل الاتصال'); }
+                if(r.ok) { alert('تمت إضافة العرض بنجاح'); loadPromotions(); } else { const e = await r.json(); alert('فشل الإضافة: '+e.error); }
+            } catch(e) { alert('فشل الاتصال بالخادم'); }
         }
-        async function deletePromotion(id) { if(!confirm(`حذف العرض؟`)) return; await fetch(`${API_PROMOTIONS}/${id}`, { method:'DELETE' }); loadPromotions(); }
+        async function deletePromotion(id) { if(!confirm(`هل أنت متأكد من حذف هذا العرض؟`)) return; await fetch(`${API_PROMOTIONS}/${id}`, { method:'DELETE' }); loadPromotions(); }
 
         // ==================== الحملات ====================
-        async function loadCampaigns() { try { const r = await fetch(API_CAMPAIGNS); const d = await r.json(); renderCampaigns(d.data||[]); } catch(e) { document.getElementById('campaignsTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">فشل التحميل</td></tr>'; } }
-        function renderCampaigns(c) { const t = document.getElementById('campaignsTableBody'); if(!c.length) { t.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">لا توجد حملات</td></tr>'; return; } t.innerHTML = c.map(x => `<tr><td>${x.title}</td><td>${x.description||'-'}</td><td>${x.start_date}</td><td>${x.end_date}</td><td><button class="btn btn-sm btn-danger" onclick="deleteCampaign(${x.id})"><i class="fas fa-trash"></i></button></td></tr>`).join(''); }
+        async function loadCampaigns() { try { const r = await fetch(API_CAMPAIGNS); const d = await r.json(); renderCampaigns(d.data||[]); } catch(e) { document.getElementById('campaignsTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>'; } }
+        function renderCampaigns(c) { const t = document.getElementById('campaignsTableBody'); if(!c.length) { t.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">لا توجد حملات تسويقية</td></tr>'; return; } t.innerHTML = c.map(x => `<tr><td>${x.title}</td><td>${x.description||'-'}</td><td>${x.start_date}</td><td>${x.end_date}</td><td><button class="btn btn-sm btn-danger" onclick="deleteCampaign(${x.id})"><i class="fas fa-trash"></i></button></td></tr>`).join(''); }
         async function addCampaign() {
             const t = document.getElementById('campTitle').value.trim();
             const d = document.getElementById('campDesc').value.trim();
             const start = document.getElementById('campStart').value;
             const end = document.getElementById('campEnd').value;
-            if(!t||!start||!end) return alert('املأ الحقول المطلوبة');
+            if(!t||!start||!end) return alert('يرجى ملء الحقول المطلوبة');
             try {
                 const r = await fetch(API_CAMPAIGNS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title:t,description:d,start_date:start,end_date:end}) });
-                if(r.ok) { alert('تمت الإضافة'); loadCampaigns(); } else { const e = await r.json(); alert('فشل: '+e.error); }
-            } catch(e) { alert('فشل الاتصال'); }
+                if(r.ok) { alert('تمت إضافة الحملة بنجاح'); loadCampaigns(); } else { const e = await r.json(); alert('فشل الإضافة: '+e.error); }
+            } catch(e) { alert('فشل الاتصال بالخادم'); }
         }
-        async function deleteCampaign(id) { if(!confirm(`حذف الحملة؟`)) return; await fetch(`${API_CAMPAIGNS}/${id}`, { method:'DELETE' }); loadCampaigns(); }
+        async function deleteCampaign(id) { if(!confirm(`هل أنت متأكد من حذف هذه الحملة؟`)) return; await fetch(`${API_CAMPAIGNS}/${id}`, { method:'DELETE' }); loadCampaigns(); }
 
         // ==================== الشريط العلوي ====================
         async function loadBanner() {
@@ -552,15 +571,26 @@
             if(!msg) return alert('أدخل نص الرسالة');
             try {
                 const r = await fetch(API_BANNER, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message:msg, link_url:link}) });
-                if(r.ok) { alert('✅ تم تحديث الشريط'); loadBanner(); } else { const e = await r.json(); alert('❌ '+e.error); }
-            } catch(e) { alert('❌ فشل الاتصال'); }
+                if(r.ok) { alert('✅ تم تحديث الشريط العلوي'); loadBanner(); } else { const e = await r.json(); alert('❌ '+e.error); }
+            } catch(e) { alert('❌ فشل الاتصال بالخادم'); }
         }
         async function removeBanner() {
             try {
                 const r = await fetch(API_BANNER, { method:'DELETE' });
-                if(r.ok) { alert('✅ تم إخفاء الشريط'); loadBanner(); } else alert('❌ فشل');
-            } catch(e) { alert('❌ فشل الاتصال'); }
+                if(r.ok) { alert('✅ تم إخفاء الشريط العلوي'); loadBanner(); } else alert('❌ فشل الإخفاء');
+            } catch(e) { alert('❌ فشل الاتصال بالخادم'); }
         }
+
+        // ==================== تهيئة ====================
+        window.onload = () => {
+            loadDevices();
+            loadDiscountCodes();
+            loadPrices();
+            loadUpdates();
+            loadPromotions();
+            loadCampaigns();
+            loadBanner();
+        };
     </script>
 </body>
 </html>
