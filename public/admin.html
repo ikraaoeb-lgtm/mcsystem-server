@@ -193,20 +193,14 @@
             margin-top: 4px;
         }
 
-        .file-upload-area {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color 0.2s;
-            background: #f8fafc;
+        .progress {
+            height: 20px;
+            display: none;
+            margin-top: 10px;
         }
-        .file-upload-area:hover { border-color: var(--primary); }
     </style>
 </head>
 <body>
-    <!-- الشريط العلوي -->
     <div class="navbar">
         <div class="container-fluid">
             <span class="navbar-brand"><i class="fas fa-shield-haltered me-2"></i>MCpos - لوحة تحكم التراخيص</span>
@@ -410,8 +404,13 @@
                 </div>
             </div>
 
+            <!-- شريط التقدم -->
+            <div class="progress" id="uploadProgress">
+                <div class="progress-bar" role="progressbar" style="width:0%">0%</div>
+            </div>
+
             <!-- جدول التحديثات السابقة -->
-            <div class="table-responsive">
+            <div class="table-responsive mt-3">
                 <table class="table table-bordered table-hover align-middle">
                     <thead>
                         <tr>
@@ -758,7 +757,8 @@
             }).join('');
         }
 
-        async function uploadUpdate() {
+        // رفع التحديث مع شريط تقدم
+        function uploadUpdate() {
             const version = document.getElementById('updateVersion').value.trim();
             const required = document.getElementById('updateRequired').value;
             const notes = document.getElementById('updateNotes').value.trim();
@@ -769,32 +769,58 @@
                 alert('يرجى إدخال رقم الإصدار');
                 return;
             }
+            if (!file) {
+                alert('يرجى اختيار ملف التحديث');
+                return;
+            }
 
             const formData = new FormData();
             formData.append('version', version);
             formData.append('required', required);
             formData.append('notes', notes);
-            if (file) formData.append('update_file', file);
+            formData.append('update_file', file);
 
-            try {
-                const res = await fetch(API_UPDATES, {
-                    method: 'POST',
-                    body: formData
-                });
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = progressDiv.querySelector('.progress-bar');
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
 
-                if (res.ok) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', API_UPDATES);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressBar.textContent = percent + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                progressDiv.style.display = 'none';
+                if (xhr.status === 200) {
                     alert('✅ تم رفع التحديث بنجاح');
                     document.getElementById('updateVersion').value = '';
                     document.getElementById('updateNotes').value = '';
                     fileInput.value = '';
                     loadUpdates();
                 } else {
-                    const err = await res.json();
-                    alert('❌ فشل رفع التحديث: ' + (err.error || 'خطأ غير معروف'));
+                    try {
+                        const err = JSON.parse(xhr.responseText);
+                        alert('❌ فشل رفع التحديث: ' + (err.error || 'خطأ غير معروف'));
+                    } catch (e) {
+                        alert('❌ فشل رفع التحديث (استجابة غير صالحة)');
+                    }
                 }
-            } catch (e) {
-                alert('❌ فشل الاتصال بالخادم');
-            }
+            };
+
+            xhr.onerror = function() {
+                progressDiv.style.display = 'none';
+                alert('❌ تعذر الاتصال بالخادم');
+            };
+
+            xhr.send(formData);
         }
 
         async function deleteUpdate(version) {
