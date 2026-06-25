@@ -66,10 +66,14 @@ app.get('/admin', (req, res) => {
 const dbPath = isRender
     ? '/opt/render/.data/mcpos.db'
     : path.join(__dirname, 'database', 'mcpos.db');
+console.log('📁 مسار قاعدة البيانات:', dbPath);
+
 if (!fs.existsSync(path.dirname(dbPath))) {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 }
 const db = new sqlite3.Database(dbPath);
+
+// تفعيل WAL
 db.run('PRAGMA journal_mode=WAL;');
 
 // ---- طباعة الجداول الموجودة عند بدء التشغيل (للتشخيص) ----
@@ -81,7 +85,7 @@ db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
     }
 });
 
-// ---- إنشاء الجداول ----
+// ---- إنشاء الجداول (مع معالجة الأخطاء) ----
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS devices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,7 +111,10 @@ db.serialize(() => {
         created_at TEXT,
         updated_at TEXT,
         license_signature TEXT
-    )`);
+    )`, (err) => {
+        if (err) console.error('❌ فشل إنشاء جدول devices:', err.message);
+        else console.log('✅ جدول devices جاهز');
+    });
 
     db.run(`CREATE TABLE IF NOT EXISTS heartbeats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
