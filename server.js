@@ -72,6 +72,15 @@ if (!fs.existsSync(path.dirname(dbPath))) {
 const db = new sqlite3.Database(dbPath);
 db.run('PRAGMA journal_mode=WAL;');
 
+// ---- طباعة الجداول الموجودة عند بدء التشغيل (للتشخيص) ----
+db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
+    if (err) {
+        console.error('❌ خطأ في قراءة الجداول:', err.message);
+    } else {
+        console.log('📋 الجداول الموجودة:', tables.map(t => t.name).join(', '));
+    }
+});
+
 // ---- إنشاء الجداول ----
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS devices (
@@ -317,6 +326,15 @@ app.post('/api/devices/:hwid/extend-trial', (req, res) => {
     });
 });
 
+// حذف جهاز
+app.delete('/api/devices/:hwid', (req, res) => {
+    const { hwid } = req.params;
+    db.run('DELETE FROM devices WHERE hwid = ?', [hwid], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
 // نبضات القلب
 app.post('/api/heartbeat/:hwid', (req, res) => {
     const { hwid } = req.params;
@@ -462,14 +480,7 @@ setInterval(() => {
         }
     });
 }, 60 * 1000);
-// طباعة الجداول الموجودة في قاعدة البيانات عند بدء التشغيل
-db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
-    if (err) {
-        console.error('❌ خطأ في قراءة الجداول:', err.message);
-    } else {
-        console.log('📋 الجداول الموجودة:', tables.map(t => t.name).join(', '));
-    }
-});
+
 // ---- تشغيل الخادم ----
 app.listen(PORT, () => {
     console.log(`🚀 License Server running on port ${PORT}`);
