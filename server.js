@@ -11,7 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ---- مسارات التخزين (ثابتة في Render، محلية في غيره) ----
-const isRender = !!process.env.RENDER;
+// التحقق من أننا على Render باستخدام متغير البيئة RENDER (يجب أن تكون قيمته 'true')
+const isRender = process.env.RENDER === 'true';
 
 const uploadsDir = isRender
     ? '/opt/render/.data/uploads'
@@ -63,6 +64,7 @@ app.get('/admin', (req, res) => {
 });
 
 // ---- قاعدة البيانات ----
+// استخدام المسار الدائم على Render، والمسار المحلي للتطوير
 const dbPath = isRender
     ? '/opt/render/.data/mcpos.db'
     : path.join(__dirname, 'database', 'mcpos.db');
@@ -446,7 +448,6 @@ app.post('/api/discount-codes/validate', (req, res) => {
 });
 
 // ================== نظام العروض الترويجية ==================
-// الحصول على العروض النشطة حالياً
 app.get('/api/promotions/active', (req, res) => {
     const now = new Date().toISOString();
     db.all(
@@ -463,7 +464,6 @@ app.get('/api/promotions/active', (req, res) => {
     );
 });
 
-// إضافة عرض جديد (للاستخدام من لوحة الإدارة)
 app.post('/api/promotions', (req, res) => {
     const { title, description, discount_type, discount_value, start_date, end_date } = req.body;
     if (!title || !discount_type || !discount_value || !start_date || !end_date) {
@@ -481,7 +481,6 @@ app.post('/api/promotions', (req, res) => {
     );
 });
 
-// الحصول على جميع العروض (للاستخدام الإداري)
 app.get('/api/promotions', (req, res) => {
     db.all('SELECT * FROM promotions ORDER BY created_at DESC', (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -489,7 +488,6 @@ app.get('/api/promotions', (req, res) => {
     });
 });
 
-// حذف عرض
 app.delete('/api/promotions/:id', (req, res) => {
     const { id } = req.params;
     db.run('DELETE FROM promotions WHERE id = ?', [id], (err) => {
