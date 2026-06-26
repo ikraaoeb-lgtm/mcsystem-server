@@ -85,7 +85,7 @@ db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
     }
 });
 
-// ---- إنشاء الجداول الأساسية ----
+// ---- إنشاء الجداول (مع معالجة الأخطاء) ----
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS devices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -149,34 +149,21 @@ db.serialize(() => {
         created_at TEXT
     )`);
 
-    // جداول العروض والحملات والإعلانات
+    // ---- جدول العروض الترويجية الجديد ----
     db.run(`CREATE TABLE IF NOT EXISTS promotions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
-        discount_type TEXT,
-        discount_value REAL,
-        start_date TEXT,
-        end_date TEXT,
-        is_active INTEGER DEFAULT 1
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS campaigns (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        description TEXT,
-        image_url TEXT,
-        start_date TEXT,
-        end_date TEXT,
-        is_active INTEGER DEFAULT 1
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS banner (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        message TEXT,
-        link_url TEXT,
-        is_active INTEGER DEFAULT 1
-    )`);
+        discount_type TEXT NOT NULL,
+        discount_value REAL NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT
+    )`, (err) => {
+        if (err) console.error('❌ فشل إنشاء جدول promotions:', err.message);
+        else console.log('✅ جدول promotions جاهز');
+    });
 
     // إعدادات افتراضية
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('trial_days', '14')`);
@@ -184,31 +171,6 @@ db.serialize(() => {
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('offline_grace_period', '90')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('subscription_prices', '{"monthly":1500,"quarterly":4000,"semiannual":7000,"annual":12000,"permanent":20000}')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('update_policy', 'optional')`);
-
-    // بيانات افتراضية للعروض والحملات إن لم تكن موجودة
-    db.get("SELECT COUNT(*) as count FROM promotions", (err, row) => {
-        if (row && row.count === 0) {
-            db.run(`INSERT INTO promotions (title, description, discount_type, discount_value, start_date, end_date) VALUES 
-                ('خصم رمضان 2026', 'خصم 20% على جميع الباقات السنوية', 'percent', 20, '2026-03-01', '2026-04-01'),
-                ('عرض الدخول المدرسي', 'خصم 30% للمدارس والمكتبات', 'percent', 30, '2026-09-01', '2026-10-01')
-            `);
-        }
-    });
-
-    db.get("SELECT COUNT(*) as count FROM campaigns", (err, row) => {
-        if (row && row.count === 0) {
-            db.run(`INSERT INTO campaigns (title, description, start_date, end_date) VALUES 
-                ('حملة رمضان', 'عروض خاصة لشهر رمضان المبارك', '2026-03-01', '2026-04-01'),
-                ('العودة للمدارس', 'تجهيز المكتبات بأفضل الأسعار', '2026-09-01', '2026-10-01')
-            `);
-        }
-    });
-
-    db.get("SELECT COUNT(*) as count FROM banner", (err, row) => {
-        if (row && row.count === 0) {
-            db.run(`INSERT INTO banner (message, link_url) VALUES ('🔥 اشترك سنوياً واحصل على شهر مجاني', '#pricing')`);
-        }
-    });
 });
 
 // ---- دوال مساعدة ----
@@ -221,7 +183,7 @@ function signPayload(payload) {
 // ====================== API Routes ======================
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.send('✅ MCpos License Server is running.');
 });
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -406,7 +368,6 @@ app.post('/api/heartbeat/:hwid', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
 
         if (row) {
-            // تحديث آخر ظهور
             db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid], (err) => {
                 if (err) return res.status(500).json({ error: err.message });
                 db.run('INSERT INTO heartbeats (hwid, timestamp, status, details) VALUES (?,?,?,?)',
@@ -414,7 +375,6 @@ app.post('/api/heartbeat/:hwid', (req, res) => {
                 res.json({ success: true });
             });
         } else {
-            // إنشاء سجل جديد للجهاز تلقائياً
             const shopName = details ? details.replace('متجر: ', '') : 'جهاز غير مسجل';
             db.run(
                 `INSERT INTO devices (hwid, shop_name, status, trial_start, trial_end, created_at, updated_at, last_seen)
@@ -485,30 +445,56 @@ app.post('/api/discount-codes/validate', (req, res) => {
     });
 });
 
-// ================== العروض والحملات والإعلانات ==================
-
-// العروض النشطة
+// ================== نظام العروض الترويجية ==================
+// الحصول على العروض النشطة حالياً
 app.get('/api/promotions/active', (req, res) => {
-    const now = new Date().toISOString().split('T')[0];
-    db.all('SELECT * FROM promotions WHERE is_active=1 AND start_date <= ? AND end_date >= ?', [now, now], (err, rows) => {
+    const now = new Date().toISOString();
+    db.all(
+        `SELECT * FROM promotions 
+         WHERE is_active = 1 
+           AND start_date <= ? 
+           AND end_date >= ? 
+         ORDER BY end_date ASC`,
+        [now, now],
+        (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, data: rows || [] });
+        }
+    );
+});
+
+// إضافة عرض جديد (للاستخدام من لوحة الإدارة)
+app.post('/api/promotions', (req, res) => {
+    const { title, description, discount_type, discount_value, start_date, end_date } = req.body;
+    if (!title || !discount_type || !discount_value || !start_date || !end_date) {
+        return res.status(400).json({ error: 'جميع الحقول المطلوبة مفقودة' });
+    }
+
+    db.run(
+        `INSERT INTO promotions (title, description, discount_type, discount_value, start_date, end_date, is_active, created_at)
+         VALUES (?,?,?,?,?,?,1,?)`,
+        [title, description, discount_type, discount_value, start_date, end_date, new Date().toISOString()],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, id: this.lastID });
+        }
+    );
+});
+
+// الحصول على جميع العروض (للاستخدام الإداري)
+app.get('/api/promotions', (req, res) => {
+    db.all('SELECT * FROM promotions ORDER BY created_at DESC', (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, data: rows });
+        res.json({ success: true, data: rows || [] });
     });
 });
 
-// الحملات التسويقية
-app.get('/api/campaigns', (req, res) => {
-    db.all('SELECT * FROM campaigns WHERE is_active=1', [], (err, rows) => {
+// حذف عرض
+app.delete('/api/promotions/:id', (req, res) => {
+    const { id } = req.params;
+    db.run('DELETE FROM promotions WHERE id = ?', [id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, data: rows });
-    });
-});
-
-// شريط الإعلان العلوي
-app.get('/api/banner', (req, res) => {
-    db.get('SELECT * FROM banner WHERE is_active=1 ORDER BY id DESC LIMIT 1', [], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, data: row || null });
+        res.json({ success: true });
     });
 });
 
@@ -588,6 +574,8 @@ setInterval(() => {
             });
         }
     });
+    // إلغاء تنشيط العروض المنتهية تلقائياً
+    db.run(`UPDATE promotions SET is_active = 0 WHERE end_date < ? AND is_active = 1`, [now.toISOString()]);
 }, 60 * 1000);
 
 // ---- تشغيل الخادم ----
