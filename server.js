@@ -11,7 +11,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ---- مسارات التخزين (ثابتة في Render، محلية في غيره) ----
-// التحقق من أننا على Render باستخدام متغير البيئة RENDER (يجب أن تكون قيمته 'true')
 const isRender = process.env.RENDER === 'true';
 
 const uploadsDir = isRender
@@ -64,7 +63,6 @@ app.get('/admin', (req, res) => {
 });
 
 // ---- قاعدة البيانات ----
-// استخدام المسار الدائم على Render، والمسار المحلي للتطوير
 const dbPath = isRender
     ? '/opt/render/.data/mcpos.db'
     : path.join(__dirname, 'database', 'mcpos.db');
@@ -151,7 +149,6 @@ db.serialize(() => {
         created_at TEXT
     )`);
 
-    // ---- جدول العروض الترويجية الجديد ----
     db.run(`CREATE TABLE IF NOT EXISTS promotions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
@@ -180,6 +177,31 @@ function signPayload(payload) {
     const sign = crypto.createSign('SHA256');
     sign.update(JSON.stringify(payload));
     return sign.sign(privateKey, 'base64');
+}
+
+// دالة مساعدة لتسجيل جهاز تلقائياً أو تحديث آخر ظهور
+function ensureDeviceExists(hwid, callback) {
+    const now = new Date().toISOString();
+    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
+        if (row) {
+            // موجود – تحديث last_seen
+            db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
+            callback(null, row);
+        } else {
+            // غير موجود – إنشاؤه تلقائياً
+            db.run(
+                `INSERT INTO devices (hwid, shop_name, status, trial_start, trial_end, created_at, updated_at, last_seen)
+                 VALUES (?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
+                [hwid, 'جهاز غير مسجل', now, now, now],
+                function(err) {
+                    if (err) return callback(err);
+                    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, newRow) => {
+                        callback(err2, newRow);
+                    });
+                }
+            );
+        }
+    });
 }
 
 // ====================== API Routes ======================
@@ -214,6 +236,8 @@ app.post('/api/devices/register', (req, res) => {
                 hwid
             };
             const signature = signPayload(payload);
+            // تحديث آخر ظهور حتى مع التسجيل المكرر
+            db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [new Date().toISOString(), hwid]);
             return res.json({ success: true, alreadyRegistered: true, data: { ...payload, signature } });
         }
 
@@ -228,9 +252,9 @@ app.post('/api/devices/register', (req, res) => {
             const secret = crypto.randomBytes(16).toString('hex');
 
             db.run(
-                `INSERT INTO devices (hwid, device_secret, shop_name, manager_name, email, phone, status, activation_type, trial_start, trial_end, server_trial_end, created_at, updated_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-                [hwid, secret, shop_name, manager_name, email, phone, status, activation_type || null, trial_start, trial_end, trial_end, now, now],
+                `INSERT INTO devices (hwid, device_secret, shop_name, manager_name, email, phone, status, activation_type, trial_start, trial_end, server_trial_end, created_at, updated_at, last_seen)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                [hwid, secret, shop_name, manager_name, email, phone, status, activation_type || null, trial_start, trial_end, trial_end, now, now, now],
                 function (err) {
                     if (err) return res.status(500).json({ error: err.message });
 
@@ -257,14 +281,13 @@ app.post('/api/devices/register', (req, res) => {
     });
 });
 
-// التحقق من حالة التفعيل
+// التحقق من حالة التفعيل (مع التسجيل التلقائي)
 app.post('/api/devices/check', (req, res) => {
     const { hwid } = req.body;
     if (!hwid) return res.status(400).json({ error: 'HWID required' });
 
-    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
+    ensureDeviceExists(hwid, (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!row) return res.status(404).json({ error: 'Device not found' });
 
         const payload = {
             status: row.status,
@@ -276,17 +299,18 @@ app.post('/api/devices/check', (req, res) => {
             hwid
         };
         const signature = signPayload(payload);
-        db.run('UPDATE devices SET last_sync = ? WHERE hwid = ?', [new Date().toISOString(), hwid]);
+        db.run('UPDATE devices SET last_sync = ?, last_seen = ? WHERE hwid = ?', [new Date().toISOString(), new Date().toISOString(), hwid]);
         res.json({ success: true, data: { ...payload, signature } });
     });
 });
 
-// مزامنة
+// مزامنة (مع التسجيل التلقائي)
 app.post('/api/devices/sync', (req, res) => {
     const { hwid } = req.body;
-    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
+    if (!hwid) return res.status(400).json({ error: 'HWID required' });
+
+    ensureDeviceExists(hwid, (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!row) return res.status(404).json({ error: 'Device not found' });
 
         const payload = {
             status: row.status,
@@ -360,36 +384,18 @@ app.delete('/api/devices/:hwid', (req, res) => {
     });
 });
 
-// نبضات القلب – تسجيل الأجهزة تلقائياً إذا لم تكن موجودة
+// نبضات القلب (كما هي، تسجل الجهاز تلقائياً)
 app.post('/api/heartbeat/:hwid', (req, res) => {
     const { hwid } = req.params;
     const { status, details } = req.body;
     const now = new Date().toISOString();
 
-    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
+    ensureDeviceExists(hwid, (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-
-        if (row) {
-            db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-                db.run('INSERT INTO heartbeats (hwid, timestamp, status, details) VALUES (?,?,?,?)',
-                    [hwid, now, status, details]);
-                res.json({ success: true });
-            });
-        } else {
-            const shopName = details ? details.replace('متجر: ', '') : 'جهاز غير مسجل';
-            db.run(
-                `INSERT INTO devices (hwid, shop_name, status, trial_start, trial_end, created_at, updated_at, last_seen)
-                 VALUES (?, ?, ?, date('now'), date('now', '+14 days'), ?, ?, ?)`,
-                [hwid, shopName, status || 'trial', now, now, now],
-                function (err) {
-                    if (err) return res.status(500).json({ error: err.message });
-                    db.run('INSERT INTO heartbeats (hwid, timestamp, status, details) VALUES (?,?,?,?)',
-                        [hwid, now, status, details]);
-                    res.json({ success: true, created: true });
-                }
-            );
-        }
+        db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
+        db.run('INSERT INTO heartbeats (hwid, timestamp, status, details) VALUES (?,?,?,?)',
+            [hwid, now, status || row.status, details || '']);
+        res.json({ success: true });
     });
 });
 
@@ -497,7 +503,6 @@ app.delete('/api/promotions/:id', (req, res) => {
 });
 
 // ================== نظام التحديثات ==================
-
 app.post('/api/updates', upload.single('update_file'), (req, res) => {
     const { version, required, notes } = req.body;
     if (!version) return res.status(400).json({ success: false, error: 'رقم الإصدار مطلوب' });
