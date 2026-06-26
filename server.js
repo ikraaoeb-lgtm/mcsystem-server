@@ -1,4 +1,4 @@
-// server.js – License Server لـ MCpos (إصدار آمن للإنتاج)
+// server.js – License Server لـ MCpos (إصدار آمن مع مسار دائم للبيانات)
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -63,14 +63,20 @@ app.get('/admin', (req, res) => {
 });
 
 // ---- قاعدة البيانات ----
+// استخدام المسار الدائم على Render دائمًا، والمسار المحلي للتطوير
 const dbPath = isRender
     ? '/opt/render/.data/mcpos.db'
     : path.join(__dirname, 'database', 'mcpos.db');
 console.log('📁 مسار قاعدة البيانات:', dbPath);
 
-if (!fs.existsSync(path.dirname(dbPath))) {
-    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+// التأكد من وجود المجلد الأب للمسار (في حالة المسار المحلي)
+if (!isRender) {
+    const dir = path.dirname(dbPath);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
 }
+
 const db = new sqlite3.Database(dbPath);
 
 // تفعيل WAL
@@ -530,7 +536,6 @@ app.delete('/api/promotions/:id', (req, res) => {
 });
 
 // ================== نظام التحديثات ==================
-
 app.post('/api/updates', upload.single('update_file'), (req, res) => {
     const { version, required, notes } = req.body;
     if (!version) return res.status(400).json({ success: false, error: 'رقم الإصدار مطلوب' });
