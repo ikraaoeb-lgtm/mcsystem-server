@@ -164,11 +164,11 @@ db.serialize(() => {
         else console.log('✅ جدول promotions جاهز');
     });
 
-    // إعدادات افتراضية
+    // إعدادات افتراضية (بدون اشتراك شهري)
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('trial_days', '14')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('sync_interval', '15')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('offline_grace_period', '90')`);
-    db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('subscription_prices', '{"monthly":1500,"quarterly":4000,"semiannual":7000,"annual":12000,"permanent":20000}')`);
+    db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('subscription_prices', '{"quarterly":4000,"semiannual":7000,"annual":12000,"permanent":20000}')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('update_policy', 'optional')`);
 });
 
@@ -310,7 +310,6 @@ app.post('/api/devices/check', (req, res) => {
     const { hwid } = req.body;
     if (!hwid) return res.status(400).json({ error: 'HWID required' });
 
-    // تأكد من وجود الجهاز مع بيانات فارغة (لأن الطلب قد لا يحوي تفاصيل)
     ensureDeviceExists(hwid, null, (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
 
@@ -531,6 +530,7 @@ app.delete('/api/promotions/:id', (req, res) => {
 });
 
 // ================== نظام التحديثات ==================
+
 app.post('/api/updates', upload.single('update_file'), (req, res) => {
     const { version, required, notes } = req.body;
     if (!version) return res.status(400).json({ success: false, error: 'رقم الإصدار مطلوب' });

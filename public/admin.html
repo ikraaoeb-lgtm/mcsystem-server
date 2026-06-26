@@ -254,6 +254,7 @@
                 <i class="fas fa-money-bill-wave"></i> إدارة أسعار الاشتراكات
             </div>
             <div class="prices-grid">
+                <!-- تم إزالة الاشتراك الشهري -->
                 <div class="price-card">
                     <h5><i class="far fa-calendar-alt me-1"></i> ربع سنوي</h5>
                     <input type="number" id="price_quarterly" class="price-input" placeholder="0.00" step="0.01">
@@ -294,6 +295,7 @@
                     <thead>
                         <tr>
                             <th>اسم المتجر</th>
+                            <th>الهاتف</th>
                             <th>HWID</th>
                             <th>الحالة</th>
                             <th>تاريخ الانتهاء</th>
@@ -303,7 +305,7 @@
                         </tr>
                     </thead>
                     <tbody id="devicesTableBody">
-                        <tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -495,6 +497,25 @@
     </div>
 
     <script>
+        // دالة مساعدة لتنسيق التاريخ بالأشهر العربية والأرقام العربية
+        function formatDateArabic(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '-';
+            const months = [
+                'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
+                'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+            ];
+            const day = d.getDate();
+            const month = months[d.getMonth()];
+            const year = d.getFullYear();
+            // تحويل الأرقام إلى عربية
+            const arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+            const dayStr = String(day).replace(/\d/g, d => arabicDigits[d]);
+            const yearStr = String(year).replace(/\d/g, d => arabicDigits[d]);
+            return `${dayStr} ${month} ${yearStr}`;
+        }
+
         const API_DEVICES = '/api/devices';
         const API_DISCOUNT = '/api/discount-codes';
         const API_SETTINGS = '/api/settings';
@@ -568,14 +589,14 @@
                 updateStats(devices);
             } catch (e) {
                 document.getElementById('devicesTableBody').innerHTML = 
-                    '<tr><td colspan="7" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
+                    '<tr><td colspan="8" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
             }
         }
 
         function renderDevices(devices) {
             const tbody = document.getElementById('devicesTableBody');
             if (!devices || devices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
                 return;
             }
 
@@ -583,15 +604,17 @@
                 const statusBadge = getStatusBadge(d.status);
                 const expireDate = d.trial_end || d.subscription_end || '-';
                 const shopName = d.shop_name || '-';
+                const phone = d.phone || '-';
                 const discountUsed = d.discount_code || '-';
-                const lastSeen = d.last_seen ? new Date(d.last_seen).toLocaleString('ar-EG') : '-';
+                const lastSeen = d.last_seen ? formatDateArabic(d.last_seen) : '-';
 
                 return `
                     <tr>
                         <td>${shopName}</td>
+                        <td>${phone}</td>
                         <td><small><code>${d.hwid}</code></small></td>
                         <td>${statusBadge}</td>
-                        <td>${expireDate}</td>
+                        <td>${expireDate ? formatDateArabic(expireDate) : '-'}</td>
                         <td>${discountUsed}</td>
                         <td>${lastSeen}</td>
                         <td class="device-actions">
@@ -700,7 +723,7 @@
 
             tbody.innerHTML = codes.map(c => {
                 const typeLabel = getDiscountTypeLabel(c.type);
-                const expiryDate = c.expires_at || 'غير محدد';
+                const expiryDate = c.expires_at ? formatDateArabic(c.expires_at) : 'غير محدد';
                 const maxUses = c.max_uses || 'غير محدود';
                 const usedCount = c.used_count || 0;
 
@@ -802,8 +825,8 @@
             }
 
             tbody.innerHTML = promotions.map(p => {
-                const startDate = new Date(p.start_date).toLocaleDateString('ar-EG');
-                const endDate = new Date(p.end_date).toLocaleDateString('ar-EG');
+                const startDate = formatDateArabic(p.start_date);
+                const endDate = formatDateArabic(p.end_date);
                 const isActive = p.is_active == 1;
                 const statusBadge = isActive 
                     ? '<span class="badge bg-success">نشط</span>' 
@@ -902,7 +925,7 @@
             tbody.innerHTML = updates.map(u => {
                 const typeBadge = u.required ? '<span class="badge bg-danger">إجباري</span>' : '<span class="badge bg-secondary">اختياري</span>';
                 const fileName = u.file_name || '-';
-                const createdDate = u.created_at ? new Date(u.created_at).toLocaleString('ar-EG') : '-';
+                const createdDate = u.created_at ? formatDateArabic(u.created_at) : '-';
                 return `
                     <tr>
                         <td><strong>${u.version}</strong></td>

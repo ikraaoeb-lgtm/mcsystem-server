@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MCpos - نظام إدارة المبيعات والمخزون</title>
+    <!-- أيقونة الموقع -->
+    <link rel="icon" href="asset/icon.ico" type="image/x-icon">
     <!-- Bootstrap RTL -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -222,7 +224,7 @@
     };
     const activeProduct = productsConfig.list[productsConfig.current];
 
-    // جلب الأسعار
+    // جلب الأسعار (بدون اشتراك شهري)
     async function loadPrices() {
         try {
             const res = await fetch('/api/prices');
@@ -230,7 +232,7 @@
             if (data.success && data.data) {
                 const prices = data.data;
                 const list = document.getElementById('priceList');
-                const labels = { monthly: 'اشتراك شهري', quarterly: 'ربع سنوي', semiannual: 'نصف سنوي', annual: 'سنوي', permanent: 'ترخيص دائم' };
+                const labels = { quarterly: 'ربع سنوي', semiannual: 'نصف سنوي', annual: 'سنوي', permanent: 'ترخيص دائم' };
                 list.innerHTML = Object.entries(labels).map(([key, label]) => {
                     const val = prices[key] || 0;
                     return `<li><span>${label}</span><span class="price-value">${val} د.ج</span></li>`;
@@ -239,7 +241,21 @@
         } catch(e) {}
     }
 
-    // جلب العروض
+    // جلب العروض (مع تنسيق التاريخ بالأشهر العربية)
+    function formatDateArabic(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const months = [
+            'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
+            'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+        ];
+        const day = d.getDate();
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+        return `${day} ${month} ${year}`;
+    }
+
     async function loadPromotions() {
         const container = document.getElementById('promotionsContainer');
         try {
@@ -263,7 +279,8 @@
                     countdownHtml = '<div class="text-danger mt-2">انتهى العرض</div>';
                 }
                 const discountText = p.discount_type === 'percent' ? `${p.discount_value}%` : `${p.discount_value} د.ج`;
-                return `<div class="col-md-6"><div class="promo-card"><h5>${p.title}</h5><p>${p.description || ''}</p><p><strong>الخصم:</strong> ${discountText}</p>${countdownHtml}<button class="btn btn-sm btn-primary mt-2" onclick="window.location.href='#download'">استفد الآن</button></div></div>`;
+                const endDateFormatted = formatDateArabic(p.end_date);
+                return `<div class="col-md-6"><div class="promo-card"><h5>${p.title}</h5><p>${p.description || ''}</p><p><strong>الخصم:</strong> ${discountText}</p><p>حتى ${endDateFormatted}</p>${countdownHtml}<button class="btn btn-sm btn-primary mt-2" onclick="window.location.href='#download'">استفد الآن</button></div></div>`;
             }).join('');
             // تحديث العد التنازلي كل دقيقة
             setTimeout(loadPromotions, 60000);
@@ -301,8 +318,9 @@
                 container.innerHTML = '<p class="text-muted">لا توجد تحديثات بعد</p>';
                 return;
             }
+            const createdDate = update.created_at ? formatDateArabic(update.created_at) : '';
             container.innerHTML = `
-                <div class="update-badge d-inline-block mb-2">آخر إصدار: ${update.version}</div>
+                <div class="update-badge d-inline-block mb-2">آخر إصدار: ${update.version} (${createdDate})</div>
                 <p>${update.notes || ''}</p>
                 <a href="${update.download_url || '#'}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل التحديث</a>
             `;
