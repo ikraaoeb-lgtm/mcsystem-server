@@ -179,20 +179,35 @@ function signPayload(payload) {
     return sign.sign(privateKey, 'base64');
 }
 
-// دالة مساعدة لتسجيل جهاز تلقائياً أو تحديث آخر ظهور
-function ensureDeviceExists(hwid, callback) {
+// دالة مساعدة لتسجيل جهاز تلقائياً أو تحديث آخر ظهور مع بيانات اختيارية
+function ensureDeviceExists(hwid, extraData, callback) {
     const now = new Date().toISOString();
+    const shopName = extraData?.shop_name || 'جهاز غير مسجل';
+    const phone = extraData?.phone || '';
+    const managerName = extraData?.manager_name || '';
+    const email = extraData?.email || '';
+
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (row) {
-            // موجود – تحديث last_seen
-            db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
-            callback(null, row);
+            // موجود – تحديث last_seen والبيانات الإضافية إذا قدمت
+            if (extraData) {
+                db.run(
+                    `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
+                    [shopName, managerName, email, phone, now, now, hwid]
+                );
+            } else {
+                db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
+            }
+            // استرجاع الصف المحدث
+            db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, updatedRow) => {
+                callback(err2, updatedRow);
+            });
         } else {
             // غير موجود – إنشاؤه تلقائياً
             db.run(
-                `INSERT INTO devices (hwid, shop_name, status, trial_start, trial_end, created_at, updated_at, last_seen)
-                 VALUES (?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
-                [hwid, 'جهاز غير مسجل', now, now, now],
+                `INSERT INTO devices (hwid, shop_name, manager_name, email, phone, status, trial_start, trial_end, created_at, updated_at, last_seen)
+                 VALUES (?, ?, ?, ?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
+                [hwid, shopName, managerName, email, phone, now, now, now],
                 function(err) {
                     if (err) return callback(err);
                     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, newRow) => {
@@ -220,27 +235,37 @@ app.get('/api/devices', (req, res) => {
     });
 });
 
-// تسجيل جهاز جديد
+// تسجيل جهاز جديد (مع تحديث البيانات إذا كان موجوداً)
 app.post('/api/devices/register', (req, res) => {
     const { hwid, shop_name, manager_name, email, phone, type, activation_type, discount_code } = req.body;
     if (!hwid) return res.status(400).json({ success: false, error: 'HWID required' });
 
+    const now = new Date().toISOString();
+
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
-            const payload = {
-                status: row.status,
-                trial_end: row.server_trial_end || row.trial_end,
-                subscription_end: row.server_subscription_end || row.subscription_end,
-                license_version: row.license_version,
-                hwid
-            };
-            const signature = signPayload(payload);
-            // تحديث آخر ظهور حتى مع التسجيل المكرر
-            db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [new Date().toISOString(), hwid]);
-            return res.json({ success: true, alreadyRegistered: true, data: { ...payload, signature } });
+            // الجهاز موجود – تحديث جميع البيانات
+            db.run(
+                `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
+                [shop_name || row.shop_name, manager_name || row.manager_name, email || row.email, phone || row.phone, now, now, hwid]
+            );
+            // إعادة تحميل الصف المحدث
+            db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, updatedRow) => {
+                const payload = {
+                    status: updatedRow.status,
+                    trial_end: updatedRow.server_trial_end || updatedRow.trial_end,
+                    subscription_end: updatedRow.server_subscription_end || updatedRow.subscription_end,
+                    license_version: updatedRow.license_version,
+                    hwid
+                };
+                const signature = signPayload(payload);
+                return res.json({ success: true, alreadyRegistered: true, data: { ...payload, signature } });
+            });
+            return;
         }
 
+        // جهاز جديد
         let status = 'trial';
         let trial_start = new Date().toISOString().split('T')[0];
         db.get('SELECT value FROM settings WHERE key = ?', ['trial_days'], (err, row) => {
@@ -248,7 +273,6 @@ app.post('/api/devices/register', (req, res) => {
             const end = new Date();
             end.setDate(end.getDate() + trialDays);
             const trial_end = end.toISOString().split('T')[0];
-            const now = new Date().toISOString();
             const secret = crypto.randomBytes(16).toString('hex');
 
             db.run(
@@ -286,7 +310,8 @@ app.post('/api/devices/check', (req, res) => {
     const { hwid } = req.body;
     if (!hwid) return res.status(400).json({ error: 'HWID required' });
 
-    ensureDeviceExists(hwid, (err, row) => {
+    // تأكد من وجود الجهاز مع بيانات فارغة (لأن الطلب قد لا يحوي تفاصيل)
+    ensureDeviceExists(hwid, null, (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const payload = {
@@ -299,17 +324,19 @@ app.post('/api/devices/check', (req, res) => {
             hwid
         };
         const signature = signPayload(payload);
-        db.run('UPDATE devices SET last_sync = ?, last_seen = ? WHERE hwid = ?', [new Date().toISOString(), new Date().toISOString(), hwid]);
+        const now = new Date().toISOString();
+        db.run('UPDATE devices SET last_sync = ?, last_seen = ? WHERE hwid = ?', [now, now, hwid]);
         res.json({ success: true, data: { ...payload, signature } });
     });
 });
 
 // مزامنة (مع التسجيل التلقائي)
 app.post('/api/devices/sync', (req, res) => {
-    const { hwid } = req.body;
+    const { hwid, shop_name, phone } = req.body;
     if (!hwid) return res.status(400).json({ error: 'HWID required' });
 
-    ensureDeviceExists(hwid, (err, row) => {
+    const extraData = shop_name || phone ? { shop_name, phone } : null;
+    ensureDeviceExists(hwid, extraData, (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const payload = {
@@ -322,7 +349,8 @@ app.post('/api/devices/sync', (req, res) => {
             hwid
         };
         const signature = signPayload(payload);
-        db.run('UPDATE devices SET last_sync = ?, last_seen = ? WHERE hwid = ?', [new Date().toISOString(), new Date().toISOString(), hwid]);
+        const now = new Date().toISOString();
+        db.run('UPDATE devices SET last_sync = ?, last_seen = ? WHERE hwid = ?', [now, now, hwid]);
         res.json({ success: true, data: { ...payload, signature } });
     });
 });
@@ -390,7 +418,7 @@ app.post('/api/heartbeat/:hwid', (req, res) => {
     const { status, details } = req.body;
     const now = new Date().toISOString();
 
-    ensureDeviceExists(hwid, (err, row) => {
+    ensureDeviceExists(hwid, null, (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
         db.run('INSERT INTO heartbeats (hwid, timestamp, status, details) VALUES (?,?,?,?)',
