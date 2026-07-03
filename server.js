@@ -25,18 +25,21 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// تخزين الملفات المؤقتة (للاستيراد)
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } });
 
-// تخزين ملفات الرفع (للاستيراد)
-const deviceUpload = multer({ dest: uploadsDir });
+// تخزين مؤقت لرفع قاعدة البيانات (disk)
+const dbUploadDir = path.join(uploadsDir, 'db_uploads');
+if (!fs.existsSync(dbUploadDir)) {
+    fs.mkdirSync(dbUploadDir, { recursive: true });
+}
+const uploadDb = multer({ dest: dbUploadDir, limits: { fileSize: 200 * 1024 * 1024 } });
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---- المفتاح الخاص ----
+// ---- المفتاح الخاص (من متغير البيئة أو ملف محلي للتطوير فقط) ----
 const privateKey = process.env.PRIVATE_KEY
     || (fs.existsSync('private.pem') ? fs.readFileSync('private.pem', 'utf8') : '');
 
@@ -45,7 +48,7 @@ if (!privateKey) {
     process.exit(1);
 }
 
-// ---- حماية لوحة الإدارة ----
+// ---- حماية لوحة الإدارة بكلمة مرور ----
 const ADMIN_USER = process.env.ADMIN_USER || 'mcpos';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'mcpos2025';
 
@@ -59,7 +62,7 @@ app.use('/admin', (req, res, next) => {
     res.status(401).send('Authentication required.');
 });
 
-// صفحة لوحة الإدارة
+// صفحة لوحة الإدارة (بعد الحماية)
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
@@ -73,18 +76,21 @@ console.log('📁 مسار قاعدة البيانات:', dbPath);
 if (!fs.existsSync(path.dirname(dbPath))) {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 }
-const db = new sqlite3.Database(dbPath);
+let db = new sqlite3.Database(dbPath);
 
 // تفعيل WAL
 db.run('PRAGMA journal_mode=WAL;');
 
-// طباعة الجداول
+// ---- طباعة الجداول الموجودة عند بدء التشغيل (للتشخيص) ----
 db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
-    if (err) console.error('❌ خطأ في قراءة الجداول:', err.message);
-    else console.log('📋 الجداول الموجودة:', tables.map(t => t.name).join(', '));
+    if (err) {
+        console.error('❌ خطأ في قراءة الجداول:', err.message);
+    } else {
+        console.log('📋 الجداول الموجودة:', tables.map(t => t.name).join(', '));
+    }
 });
 
-// ---- إنشاء الجداول (بدون بطاقات الدفع المسبق) ----
+// ---- إنشاء الجداول (مع معالجة الأخطاء) ----
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS devices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -110,7 +116,7 @@ db.serialize(() => {
         created_at TEXT,
         updated_at TEXT,
         license_signature TEXT,
-        code_promo TEXT          -- حقل جديد للكود الترويجي
+        discount_code TEXT
     )`, (err) => {
         if (err) console.error('❌ فشل إنشاء جدول devices:', err.message);
         else console.log('✅ جدول devices جاهز');
@@ -139,6 +145,7 @@ db.serialize(() => {
         value TEXT
     )`);
 
+    // جدول التحديثات الجديد (متوافق مع GitHub)
     db.run(`CREATE TABLE IF NOT EXISTS updates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         version TEXT NOT NULL,
@@ -163,14 +170,12 @@ db.serialize(() => {
         end_date TEXT NOT NULL,
         is_active INTEGER DEFAULT 1,
         created_at TEXT
-    )`);
-
-    // إضافة عمود code_promo إذا لم يكن موجوداً (للترقية)
-    db.run(`ALTER TABLE devices ADD COLUMN code_promo TEXT`, (err) => {
-        if (err && !err.message.includes('duplicate column')) console.warn('⚠️ ALTER TABLE devices code_promo:', err.message);
+    )`, (err) => {
+        if (err) console.error('❌ فشل إنشاء جدول promotions:', err.message);
+        else console.log('✅ جدول promotions جاهز');
     });
 
-    // إعدادات افتراضية
+    // إعدادات افتراضية (بدون اشتراك شهري)
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('trial_days', '14')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('sync_interval', '15')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('offline_grace_period', '90')`);
@@ -191,14 +196,14 @@ function ensureDeviceExists(hwid, extraData, callback) {
     const phone = extraData?.phone || '';
     const managerName = extraData?.manager_name || '';
     const email = extraData?.email || '';
-    const codePromo = extraData?.code_promo || '';
+    const discountCode = extraData?.discount_code || null;
 
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (row) {
             if (extraData) {
                 db.run(
-                    `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, code_promo = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
-                    [shopName, managerName, email, phone, codePromo, now, now, hwid]
+                    `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, discount_code = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
+                    [shopName, managerName, email, phone, discountCode, now, now, hwid]
                 );
             } else {
                 db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
@@ -208,9 +213,9 @@ function ensureDeviceExists(hwid, extraData, callback) {
             });
         } else {
             db.run(
-                `INSERT INTO devices (hwid, shop_name, manager_name, email, phone, code_promo, status, trial_start, trial_end, created_at, updated_at, last_seen)
+                `INSERT INTO devices (hwid, shop_name, manager_name, email, phone, discount_code, status, trial_start, trial_end, created_at, updated_at, last_seen)
                  VALUES (?, ?, ?, ?, ?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
-                [hwid, shopName, managerName, email, phone, codePromo, now, now, now],
+                [hwid, shopName, managerName, email, phone, discountCode, now, now, now],
                 function(err) {
                     if (err) return callback(err);
                     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, newRow) => {
@@ -280,7 +285,7 @@ async function syncUpdateFromGitHub() {
 
 // ====================== API Routes ======================
 
-// الصفحة الرئيسية
+// الصفحة الرئيسية: إرسال index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -297,7 +302,7 @@ app.get('/api/devices', (req, res) => {
 
 // تسجيل جهاز جديد (مع تحديث البيانات إذا كان موجوداً)
 app.post('/api/devices/register', (req, res) => {
-    const { hwid, shop_name, manager_name, email, phone, type, activation_type, discount_code, code_promo } = req.body;
+    const { hwid, shop_name, manager_name, email, phone, type, activation_type, discount_code } = req.body;
     if (!hwid) return res.status(400).json({ success: false, error: 'HWID required' });
 
     const now = new Date().toISOString();
@@ -306,8 +311,8 @@ app.post('/api/devices/register', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
             db.run(
-                `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, code_promo = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
-                [shop_name || row.shop_name, manager_name || row.manager_name, email || row.email, phone || row.phone, code_promo || row.code_promo, now, now, hwid]
+                `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, discount_code = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
+                [shop_name || row.shop_name, manager_name || row.manager_name, email || row.email, phone || row.phone, discount_code || row.discount_code, now, now, hwid]
             );
             db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, updatedRow) => {
                 const payload = {
@@ -333,9 +338,9 @@ app.post('/api/devices/register', (req, res) => {
             const secret = crypto.randomBytes(16).toString('hex');
 
             db.run(
-                `INSERT INTO devices (hwid, device_secret, shop_name, manager_name, email, phone, code_promo, status, activation_type, trial_start, trial_end, server_trial_end, created_at, updated_at, last_seen)
+                `INSERT INTO devices (hwid, device_secret, shop_name, manager_name, email, phone, discount_code, status, activation_type, trial_start, trial_end, server_trial_end, created_at, updated_at, last_seen)
                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-                [hwid, secret, shop_name, manager_name, email, phone, code_promo || null, status, activation_type || null, trial_start, trial_end, trial_end, now, now, now],
+                [hwid, secret, shop_name, manager_name, email, phone, discount_code || null, status, activation_type || null, trial_start, trial_end, trial_end, now, now, now],
                 function (err) {
                     if (err) return res.status(500).json({ error: err.message });
 
@@ -411,49 +416,44 @@ app.post('/api/devices/sync', (req, res) => {
     });
 });
 
-// تفعيل / حظر من لوحة الإدارة
+// تفعيل / حظر / تعديل بيانات من لوحة الإدارة
 app.put('/api/devices/:hwid', (req, res) => {
     const { hwid } = req.params;
-    const { status, activation_type, subscription_months } = req.body;
+    const { status, activation_type, subscription_months, shop_name, phone, discount_code } = req.body;
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (!row) return res.status(404).json({ error: 'Not found' });
         const newVersion = row.license_version + 1;
         const now = new Date().toISOString();
-        let updates = { status, license_version: newVersion, updated_at: now };
-        if (status === 'activated') {
-            updates.activated_at = now;
-            if (activation_type === 'subscription' && subscription_months) {
-                const end = new Date();
-                end.setMonth(end.getMonth() + subscription_months);
-                updates.subscription_end = end.toISOString().split('T')[0];
-                updates.server_subscription_end = updates.subscription_end;
-            } else if (activation_type === 'permanent') {
-                updates.subscription_end = null;
-                updates.server_subscription_end = null;
-            }
-        } else if (status === 'blocked') {
-            updates.blocked_at = now;
-        }
-        const sql = `UPDATE devices SET ${Object.keys(updates).map(k => `${k}=?`).join(', ')} WHERE hwid=?`;
-        db.run(sql, [...Object.values(updates), hwid], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true });
-        });
-    });
-});
-
-// تعديل معلومات الجهاز (اسم المحل + رقم الهاتف + code_promo)
-app.put('/api/devices/:hwid/info', (req, res) => {
-    const { hwid } = req.params;
-    const { shop_name, phone, code_promo } = req.body;
-    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
-        if (!row) return res.status(404).json({ error: 'Device not found' });
-        const updates = {};
+        let updates = {};
+        
+        // تحديث بيانات المتجر
         if (shop_name !== undefined) updates.shop_name = shop_name;
         if (phone !== undefined) updates.phone = phone;
-        if (code_promo !== undefined) updates.code_promo = code_promo;
-        if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No fields to update' });
-        updates.updated_at = new Date().toISOString();
+        if (discount_code !== undefined) updates.discount_code = discount_code;
+        
+        if (status) {
+            updates.status = status;
+            updates.license_version = newVersion;
+            updates.updated_at = now;
+            if (status === 'activated') {
+                updates.activated_at = now;
+                if (activation_type === 'subscription' && subscription_months) {
+                    const end = new Date();
+                    end.setMonth(end.getMonth() + subscription_months);
+                    updates.subscription_end = end.toISOString().split('T')[0];
+                    updates.server_subscription_end = updates.subscription_end;
+                } else if (activation_type === 'permanent') {
+                    updates.subscription_end = null;
+                    updates.server_subscription_end = null;
+                }
+            } else if (status === 'blocked') {
+                updates.blocked_at = now;
+            }
+        } else {
+            // إذا لم يتم تغيير الحالة، نضبط updated_at فقط
+            updates.updated_at = now;
+        }
+
         const sql = `UPDATE devices SET ${Object.keys(updates).map(k => `${k}=?`).join(', ')} WHERE hwid=?`;
         db.run(sql, [...Object.values(updates), hwid], (err) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -486,38 +486,6 @@ app.delete('/api/devices/:hwid', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
     });
-});
-
-// تصدير قائمة الأجهزة إلى JSON
-app.get('/api/devices/export', (req, res) => {
-    db.all('SELECT * FROM devices', (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.setHeader('Content-Disposition', 'attachment; filename=devices_export.json');
-        res.json(rows);
-    });
-});
-
-// استيراد قائمة أجهزة من ملف JSON
-app.post('/api/devices/import', deviceUpload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    try {
-        const data = JSON.parse(fs.readFileSync(req.file.path, 'utf8'));
-        if (!Array.isArray(data)) return res.status(400).json({ error: 'Invalid JSON format: array expected' });
-        let imported = 0;
-        const stmt = db.prepare(`INSERT OR REPLACE INTO devices (hwid, shop_name, phone, code_promo, status, trial_start, trial_end, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)`);
-        db.serialize(() => {
-            data.forEach(device => {
-                const { hwid, shop_name, phone, code_promo, status, trial_start, trial_end } = device;
-                stmt.run(hwid, shop_name, phone, code_promo, status || 'trial', trial_start, trial_end, new Date().toISOString(), new Date().toISOString());
-                imported++;
-            });
-            stmt.finalize();
-            fs.unlinkSync(req.file.path); // حذف الملف المؤقت
-            res.json({ success: true, imported });
-        });
-    } catch (e) {
-        res.status(400).json({ error: e.message });
-    }
 });
 
 // نبضات القلب
@@ -589,6 +557,14 @@ app.post('/api/discount-codes/validate', (req, res) => {
     });
 });
 
+app.delete('/api/discount-codes/:code', (req, res) => {
+    const { code } = req.params;
+    db.run('DELETE FROM discount_codes WHERE code = ?', [code], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
 // ================== نظام العروض الترويجية ==================
 app.get('/api/promotions/active', (req, res) => {
     const now = new Date().toISOString();
@@ -611,6 +587,7 @@ app.post('/api/promotions', (req, res) => {
     if (!title || !discount_type || !discount_value || !start_date || !end_date) {
         return res.status(400).json({ error: 'جميع الحقول المطلوبة مفقودة' });
     }
+
     db.run(
         `INSERT INTO promotions (title, description, discount_type, discount_value, start_date, end_date, is_active, created_at)
          VALUES (?,?,?,?,?,?,1,?)`,
@@ -637,11 +614,9 @@ app.delete('/api/promotions/:id', (req, res) => {
     });
 });
 
-// ================== نظام بطاقات الدفع المسبق (محذوف) ==================
-// تمت إزالة جميع routes المتعلقة بـ prepaid_cards
+// ================== نظام التحديثات (من GitHub فقط) ==================
 
-// ================== نظام التحديثات (من GitHub) ==================
-// مزامنة التحديثات من GitHub
+// مزامنة التحديثات من GitHub (للاستخدام الإداري)
 app.post('/api/updates/sync', async (req, res) => {
     try {
         const result = await syncUpdateFromGitHub();
@@ -649,14 +624,6 @@ app.post('/api/updates/sync', async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
-});
-
-// الحصول على جميع التحديثات (للوحة)
-app.get('/api/updates', (req, res) => {
-    db.all('SELECT * FROM updates ORDER BY release_date DESC', (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, data: rows || [] });
-    });
 });
 
 // الحصول على أحدث إصدار (مع التوقيع)
@@ -675,8 +642,17 @@ app.get('/api/updates/latest', (req, res) => {
             channel: row.channel,
             min_version: row.min_version
         };
+
         const signature = signPayload(payload);
         res.json({ success: true, data: { ...payload, signature } });
+    });
+});
+
+// جلب جميع التحديثات
+app.get('/api/updates', (req, res) => {
+    db.all('SELECT * FROM updates ORDER BY release_date DESC', (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, data: rows || [] });
     });
 });
 
@@ -687,6 +663,61 @@ app.delete('/api/updates/:version', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
     });
+});
+
+// ================== إدارة قاعدة البيانات ==================
+
+// تنزيل قاعدة البيانات
+app.get('/api/database/download', (req, res) => {
+    try {
+        if (!fs.existsSync(dbPath)) {
+            return res.status(404).json({ error: 'قاعدة البيانات غير موجودة' });
+        }
+        res.download(dbPath, 'mcpos.db');
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// رفع واستبدال قاعدة البيانات
+app.post('/api/database/upload', uploadDb.single('database'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'لم يتم إرفاق ملف' });
+        }
+
+        const tempPath = req.file.path;
+        
+        // إغلاق قاعدة البيانات الحالية
+        db.close((err) => {
+            if (err) {
+                console.error('خطأ في إغلاق قاعدة البيانات:', err);
+                return res.status(500).json({ error: 'فشل إغلاق قاعدة البيانات الحالية' });
+            }
+
+            try {
+                // نسخ الملف المرفوع فوق قاعدة البيانات الأصلية
+                fs.copyFileSync(tempPath, dbPath);
+                // حذف الملف المؤقت
+                fs.unlinkSync(tempPath);
+
+                // إعادة فتح قاعدة البيانات
+                db = new sqlite3.Database(dbPath);
+                db.run('PRAGMA journal_mode=WAL;');
+                
+                console.log('✅ تم استبدال قاعدة البيانات بنجاح');
+                res.json({ success: true, message: 'تم استيراد قاعدة البيانات بنجاح، يُنصح بإعادة تشغيل الخادم' });
+            } catch (copyError) {
+                console.error('خطأ في نسخ قاعدة البيانات:', copyError);
+                // محاولة إعادة فتح القديمة
+                db = new sqlite3.Database(dbPath);
+                db.run('PRAGMA journal_mode=WAL;');
+                return res.status(500).json({ error: 'فشل في استبدال قاعدة البيانات' });
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // ---- المهام الدورية ----
@@ -712,6 +743,21 @@ setInterval(() => {
     });
     db.run(`UPDATE promotions SET is_active = 0 WHERE end_date < ? AND is_active = 1`, [now.toISOString()]);
 }, 60 * 1000);
+
+// مزامنة التحديثات من GitHub دورياً كل 30 دقيقة
+setInterval(async () => {
+    try {
+        await syncUpdateFromGitHub();
+        console.log('🔄 تمت مزامنة التحديثات من GitHub تلقائياً');
+    } catch (e) {
+        console.error('❌ فشلت المزامنة الدورية للتحديثات:', e.message);
+    }
+}, 30 * 60 * 1000);
+
+// مزامنة أولى عند التشغيل
+setTimeout(() => {
+    syncUpdateFromGitHub().then(() => console.log('✅ تمت مزامنة التحديثات الأولية من GitHub')).catch(e => console.error('❌ فشلت المزامنة الأولية:', e.message));
+}, 5000);
 
 // ---- تشغيل الخادم ----
 app.listen(PORT, () => {
