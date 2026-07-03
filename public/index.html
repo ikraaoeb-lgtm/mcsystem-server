@@ -282,7 +282,6 @@
                 const endDateFormatted = formatDateArabic(p.end_date);
                 return `<div class="col-md-6"><div class="promo-card"><h5>${p.title}</h5><p>${p.description || ''}</p><p><strong>الخصم:</strong> ${discountText}</p><p>حتى ${endDateFormatted}</p>${countdownHtml}<button class="btn btn-sm btn-primary mt-2" onclick="window.location.href='#download'">استفد الآن</button></div></div>`;
             }).join('');
-            // تحديث العد التنازلي كل دقيقة
             setTimeout(loadPromotions, 60000);
         } catch(e) { container.innerHTML = '<div class="col-12 text-center text-muted">تعذر تحميل العروض</div>'; }
     }
@@ -327,7 +326,6 @@
         } catch(e) { container.innerHTML = '<p class="text-muted">تعذر جلب التحديثات</p>'; }
     }
 
-    // التهيئة
     document.addEventListener('DOMContentLoaded', () => {
         loadPrices();
         loadPromotions();

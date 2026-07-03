@@ -254,7 +254,6 @@
                 <i class="fas fa-money-bill-wave"></i> إدارة أسعار الاشتراكات
             </div>
             <div class="prices-grid">
-                <!-- تم إزالة الاشتراك الشهري -->
                 <div class="price-card">
                     <h5><i class="far fa-calendar-alt me-1"></i> ربع سنوي</h5>
                     <input type="number" id="price_quarterly" class="price-input" placeholder="0.00" step="0.01">
@@ -436,6 +435,76 @@
             </div>
         </div>
 
+        <!-- ==================== قسم بطاقات الدفع المسبق ==================== -->
+        <div class="section-card">
+            <div class="section-title">
+                <i class="fas fa-credit-card"></i> إدارة بطاقات الدفع المسبق
+            </div>
+            
+            <!-- نموذج إصدار بطاقة جديدة -->
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: 12px;">
+                <div class="col-md-2">
+                    <label class="form-label">الرصيد *</label>
+                    <input type="number" id="cardBalance" class="form-control" placeholder="1000" step="0.01">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">اسم العميل</label>
+                    <input type="text" id="cardCustomerName" class="form-control" placeholder="أحمد">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">الهاتف</label>
+                    <input type="text" id="cardCustomerPhone" class="form-control" placeholder="0555...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">تاريخ الانتهاء</label>
+                    <input type="date" id="cardExpiryDate" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success w-100" onclick="issueCard()">
+                        <i class="fas fa-plus me-1"></i> إصدار بطاقة
+                    </button>
+                </div>
+            </div>
+
+            <!-- نموذج شحن بطاقة -->
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: 12px;">
+                <div class="col-md-2">
+                    <label class="form-label">رقم البطاقة</label>
+                    <input type="text" id="rechargeCardNumber" class="form-control" placeholder="CARD-..." dir="ltr">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">قيمة الشحن</label>
+                    <input type="number" id="rechargeAmount" class="form-control" placeholder="500" step="0.01">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="rechargeCard()">
+                        <i class="fas fa-plus-circle me-1"></i> شحن
+                    </button>
+                </div>
+            </div>
+
+            <!-- جدول البطاقات -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>رقم البطاقة</th>
+                            <th>الرصيد</th>
+                            <th>اسم العميل</th>
+                            <th>الهاتف</th>
+                            <th>تاريخ الإصدار</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prepaidCardsTableBody">
+                        <tr><td colspan="8" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- ==================== قسم إدارة التحديثات ==================== -->
         <div class="section-card">
             <div class="section-title">
@@ -509,7 +578,6 @@
             const day = d.getDate();
             const month = months[d.getMonth()];
             const year = d.getFullYear();
-            // تحويل الأرقام إلى عربية
             const arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
             const dayStr = String(day).replace(/\d/g, d => arabicDigits[d]);
             const yearStr = String(year).replace(/\d/g, d => arabicDigits[d]);
@@ -521,6 +589,7 @@
         const API_SETTINGS = '/api/settings';
         const API_UPDATES = '/api/updates';
         const API_PROMOTIONS = '/api/promotions';
+        const API_CARDS = '/api/prepaid-cards';
 
         // ==================== تهيئة ====================
         document.addEventListener('DOMContentLoaded', () => {
@@ -528,7 +597,10 @@
         });
 
         async function loadAll() {
-            await Promise.all([loadDevices(), loadDiscountCodes(), loadPrices(), loadUpdates(), loadPromotions()]);
+            await Promise.all([
+                loadDevices(), loadDiscountCodes(), loadPrices(), loadUpdates(), loadPromotions(),
+                loadPrepaidCards()
+            ]);
         }
 
         // ==================== دوال الإحصائيات ====================
@@ -900,6 +972,133 @@
             } catch (e) {
                 alert('فشل الاتصال بالخادم');
             }
+        }
+
+        // ==================== دوال بطاقات الدفع المسبق ====================
+        async function loadPrepaidCards() {
+            try {
+                const res = await fetch(API_CARDS);
+                const data = await res.json();
+                const cards = data.data || [];
+                renderPrepaidCards(cards);
+            } catch (e) {
+                document.getElementById('prepaidCardsTableBody').innerHTML = 
+                    '<tr><td colspan="8" class="text-center text-danger py-4">فشل تحميل البطاقات</td></tr>';
+            }
+        }
+
+        function renderPrepaidCards(cards) {
+            const tbody = document.getElementById('prepaidCardsTableBody');
+            if (!cards || cards.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">لا توجد بطاقات</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = cards.map(c => {
+                const issueDate = c.issue_date ? formatDateArabic(c.issue_date) : '-';
+                const expiryDate = c.expiry_date ? formatDateArabic(c.expiry_date) : '-';
+                const statusBadge = c.blocked 
+                    ? '<span class="badge bg-danger">محظورة</span>' 
+                    : (c.is_active ? '<span class="badge bg-success">نشطة</span>' : '<span class="badge bg-secondary">غير نشطة</span>');
+                
+                return `
+                    <tr>
+                        <td><code>${c.card_number}</code></td>
+                        <td>${(c.balance || 0).toFixed(2)} د.ج</td>
+                        <td>${c.customer_name || '-'}</td>
+                        <td>${c.customer_phone || '-'}</td>
+                        <td>${issueDate}</td>
+                        <td>${expiryDate}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            ${!c.blocked ? `<button class="btn btn-sm btn-warning" onclick="blockCard('${c.card_number}')"><i class="fas fa-ban"></i></button>` : 
+                            `<button class="btn btn-sm btn-success" onclick="unblockCard('${c.card_number}')"><i class="fas fa-check"></i></button>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function issueCard() {
+            const balance = parseFloat(document.getElementById('cardBalance').value);
+            const customerName = document.getElementById('cardCustomerName').value.trim();
+            const phone = document.getElementById('cardCustomerPhone').value.trim();
+            const expiryDate = document.getElementById('cardExpiryDate').value;
+
+            if (!balance || balance <= 0) {
+                alert('يرجى إدخال رصيد صحيح');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_CARDS}/issue`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ balance, customer_name: customerName, phone, expiry_date: expiryDate })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(`✅ تم إصدار البطاقة بنجاح\nرقم البطاقة: ${result.cardNumber}\nرمز PIN: ${result.pin}\nيرجى حفظ PIN لأنه لن يظهر مرة أخرى`);
+                    document.getElementById('cardBalance').value = '';
+                    document.getElementById('cardCustomerName').value = '';
+                    document.getElementById('cardCustomerPhone').value = '';
+                    document.getElementById('cardExpiryDate').value = '';
+                    loadPrepaidCards();
+                } else {
+                    alert('❌ فشل الإصدار: ' + (result.error || 'خطأ غير معروف'));
+                }
+            } catch (e) {
+                alert('فشل الاتصال بالخادم');
+            }
+        }
+
+        async function rechargeCard() {
+            const cardNumber = document.getElementById('rechargeCardNumber').value.trim();
+            const amount = parseFloat(document.getElementById('rechargeAmount').value);
+
+            if (!cardNumber || !amount || amount <= 0) {
+                alert('يرجى إدخال رقم البطاقة وقيمة الشحن');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_CARDS}/recharge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ card_number: cardNumber, amount })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(`✅ تم الشحن بنجاح. الرصيد الجديد: ${result.newBalance.toFixed(2)} د.ج`);
+                    document.getElementById('rechargeCardNumber').value = '';
+                    document.getElementById('rechargeAmount').value = '';
+                    loadPrepaidCards();
+                } else {
+                    alert('❌ فشل الشحن: ' + (result.error || 'خطأ غير معروف'));
+                }
+            } catch (e) {
+                alert('فشل الاتصال بالخادم');
+            }
+        }
+
+        async function blockCard(cardNumber) {
+            try {
+                const res = await fetch(`${API_CARDS}/${cardNumber}/block`, { method: 'PUT' });
+                if (res.ok) {
+                    alert('تم حظر البطاقة');
+                    loadPrepaidCards();
+                }
+            } catch (e) { alert('فشل الاتصال'); }
+        }
+
+        async function unblockCard(cardNumber) {
+            try {
+                const res = await fetch(`${API_CARDS}/${cardNumber}/unblock`, { method: 'PUT' });
+                if (res.ok) {
+                    alert('تم إلغاء حظر البطاقة');
+                    loadPrepaidCards();
+                }
+            } catch (e) { alert('فشل الاتصال'); }
         }
 
         // ==================== دوال التحديثات ====================

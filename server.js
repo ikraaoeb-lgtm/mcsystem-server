@@ -1,4 +1,4 @@
-// server.js – License Server لـ MCpos (إصدار آمن مع مسار دائم للبيانات)
+// server.js – License Server لـ MCpos (إصدار آمن للإنتاج)
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -10,6 +10,11 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ---- إعدادات GitHub ----
+const GITHUB_REPO_OWNER = 'ikraaoeb-lgtm';
+const GITHUB_REPO_NAME = 'MCpos';
+const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/releases/latest`;
+
 // ---- مسارات التخزين (ثابتة في Render، محلية في غيره) ----
 const isRender = process.env.RENDER === 'true';
 
@@ -20,14 +25,7 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadsDir),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, `update-${req.body.version || uniqueSuffix}${ext}`);
-    }
-});
+const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } });
 
 app.use(cors());
@@ -63,20 +61,14 @@ app.get('/admin', (req, res) => {
 });
 
 // ---- قاعدة البيانات ----
-// استخدام المسار الدائم على Render دائمًا، والمسار المحلي للتطوير
 const dbPath = isRender
     ? '/opt/render/.data/mcpos.db'
     : path.join(__dirname, 'database', 'mcpos.db');
 console.log('📁 مسار قاعدة البيانات:', dbPath);
 
-// التأكد من وجود المجلد الأب للمسار (في حالة المسار المحلي)
-if (!isRender) {
-    const dir = path.dirname(dbPath);
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
+if (!fs.existsSync(path.dirname(dbPath))) {
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 }
-
 const db = new sqlite3.Database(dbPath);
 
 // تفعيل WAL
@@ -145,14 +137,19 @@ db.serialize(() => {
         value TEXT
     )`);
 
+    // جدول التحديثات الجديد (متوافق مع GitHub)
     db.run(`CREATE TABLE IF NOT EXISTS updates (
-        version TEXT PRIMARY KEY,
-        required INTEGER DEFAULT 0,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version TEXT NOT NULL,
+        release_date TEXT,
         notes TEXT,
-        file_path TEXT,
-        file_name TEXT,
-        file_size INTEGER,
-        created_at TEXT
+        file_url TEXT,
+        file_size INTEGER DEFAULT 0,
+        mandatory INTEGER DEFAULT 0,
+        channel TEXT DEFAULT 'stable',
+        min_version TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS promotions (
@@ -185,7 +182,6 @@ function signPayload(payload) {
     return sign.sign(privateKey, 'base64');
 }
 
-// دالة مساعدة لتسجيل جهاز تلقائياً أو تحديث آخر ظهور مع بيانات اختيارية
 function ensureDeviceExists(hwid, extraData, callback) {
     const now = new Date().toISOString();
     const shopName = extraData?.shop_name || 'جهاز غير مسجل';
@@ -195,7 +191,6 @@ function ensureDeviceExists(hwid, extraData, callback) {
 
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (row) {
-            // موجود – تحديث last_seen والبيانات الإضافية إذا قدمت
             if (extraData) {
                 db.run(
                     `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
@@ -204,12 +199,10 @@ function ensureDeviceExists(hwid, extraData, callback) {
             } else {
                 db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
             }
-            // استرجاع الصف المحدث
             db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, updatedRow) => {
                 callback(err2, updatedRow);
             });
         } else {
-            // غير موجود – إنشاؤه تلقائياً
             db.run(
                 `INSERT INTO devices (hwid, shop_name, manager_name, email, phone, status, trial_start, trial_end, created_at, updated_at, last_seen)
                  VALUES (?, ?, ?, ?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
@@ -225,10 +218,67 @@ function ensureDeviceExists(hwid, extraData, callback) {
     });
 }
 
+// دالة جلب أحدث إصدار من GitHub
+async function fetchLatestGitHubRelease() {
+    try {
+        const response = await fetch(GITHUB_API_URL, {
+            headers: {
+                'User-Agent': 'MCpos-Server',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
+        const release = await response.json();
+        return {
+            version: release.tag_name.replace('v', ''),
+            releaseDate: release.published_at,
+            notes: release.body || '',
+            fileUrl: release.assets?.[0]?.browser_download_url || release.html_url,
+            fileSize: release.assets?.[0]?.size || 0,
+            prerelease: release.prerelease || false
+        };
+    } catch (error) {
+        console.error('فشل جلب بيانات GitHub:', error);
+        return null;
+    }
+}
+
+// دالة مزامنة آخر إصدار إلى قاعدة البيانات
+async function syncUpdateFromGitHub() {
+    const release = await fetchLatestGitHubRelease();
+    if (!release) return { success: false, error: 'تعذر جلب بيانات الإصدار من GitHub' };
+
+    return new Promise((resolve, reject) => {
+        db.get('SELECT id FROM updates WHERE version = ?', [release.version], (err, existing) => {
+            if (err) return reject(err);
+            if (existing) {
+                db.run(
+                    `UPDATE updates SET release_date=?, notes=?, file_url=?, file_size=?, updated_at=CURRENT_TIMESTAMP WHERE version=?`,
+                    [release.releaseDate, release.notes, release.fileUrl, release.fileSize, release.version],
+                    (err) => {
+                        if (err) return reject(err);
+                        resolve({ success: true, version: release.version });
+                    }
+                );
+            } else {
+                db.run(
+                    `INSERT INTO updates (version, release_date, notes, file_url, file_size, mandatory, channel, min_version) VALUES (?,?,?,?,?,?,?,?)`,
+                    [release.version, release.releaseDate, release.notes, release.fileUrl, release.fileSize, 0, 'stable', '1.0.0'],
+                    function(err) {
+                        if (err) return reject(err);
+                        resolve({ success: true, version: release.version });
+                    }
+                );
+            }
+        });
+    });
+}
+
 // ====================== API Routes ======================
 
+// الصفحة الرئيسية: إرسال index.html
 app.get('/', (req, res) => {
-    res.send('✅ MCpos License Server is running.');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -251,12 +301,10 @@ app.post('/api/devices/register', (req, res) => {
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
-            // الجهاز موجود – تحديث جميع البيانات
             db.run(
                 `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
                 [shop_name || row.shop_name, manager_name || row.manager_name, email || row.email, phone || row.phone, now, now, hwid]
             );
-            // إعادة تحميل الصف المحدث
             db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, updatedRow) => {
                 const payload = {
                     status: updatedRow.status,
@@ -271,7 +319,6 @@ app.post('/api/devices/register', (req, res) => {
             return;
         }
 
-        // جهاز جديد
         let status = 'trial';
         let trial_start = new Date().toISOString().split('T')[0];
         db.get('SELECT value FROM settings WHERE key = ?', ['trial_days'], (err, row) => {
@@ -417,7 +464,7 @@ app.delete('/api/devices/:hwid', (req, res) => {
     });
 });
 
-// نبضات القلب (كما هي، تسجل الجهاز تلقائياً)
+// نبضات القلب
 app.post('/api/heartbeat/:hwid', (req, res) => {
     const { hwid } = req.params;
     const { status, details } = req.body;
@@ -535,57 +582,116 @@ app.delete('/api/promotions/:id', (req, res) => {
     });
 });
 
-// ================== نظام التحديثات ==================
-app.post('/api/updates', upload.single('update_file'), (req, res) => {
-    const { version, required, notes } = req.body;
-    if (!version) return res.status(400).json({ success: false, error: 'رقم الإصدار مطلوب' });
-    
-    const file = req.file;
-    const filePath = file ? file.path : null;
-    const fileName = file ? file.originalname : null;
-    const fileSize = file ? file.size : 0;
+// ================== نظام بطاقات الدفع المسبق ==================
+app.get('/api/prepaid-cards', (req, res) => {
+    db.all('SELECT * FROM prepaid_cards ORDER BY issue_date DESC', (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, data: rows || [] });
+    });
+});
+
+app.post('/api/prepaid-cards/issue', (req, res) => {
+    const { balance, customer_name, phone, expiry_date } = req.body;
+    if (!balance || balance <= 0) {
+        return res.status(400).json({ error: 'الرصيد مطلوب' });
+    }
+
+    const cardNumber = 'CARD-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
+    const pin = Math.random().toString().slice(2, 8);
+    const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
 
     db.run(
-        `INSERT OR REPLACE INTO updates (version, required, notes, file_path, file_name, file_size, created_at)
-         VALUES (?,?,?,?,?,?,?)`,
-        [version, required ? 1 : 0, notes || '', filePath, fileName, fileSize, new Date().toISOString()],
+        `INSERT INTO prepaid_cards (card_number, pin_hash, balance, initial_balance, issue_date, expiry_date, customer_name, customer_phone)
+         VALUES (?, ?, ?, ?, date('now'), ?, ?, ?)`,
+        [cardNumber, pinHash, balance, balance, expiry_date || null, customer_name || null, phone || null],
         function (err) {
-            if (err) return res.status(500).json({ success: false, error: err.message });
-            res.json({ success: true, id: this.lastID });
+            if (err) return res.status(500).json({ error: err.message });
+            db.run(
+                `INSERT INTO card_transactions (card_id, transaction_type, amount, description) VALUES (?, 'issue', ?, 'إصدار بطاقة جديدة')`,
+                [this.lastID, balance]
+            );
+            res.json({ success: true, cardNumber, pin });
         }
     );
 });
 
+app.post('/api/prepaid-cards/recharge', (req, res) => {
+    const { card_number, amount } = req.body;
+    if (!card_number || !amount || amount <= 0) {
+        return res.status(400).json({ error: 'رقم البطاقة وقيمة الشحن مطلوبان' });
+    }
+
+    db.get('SELECT id, balance, is_active, blocked FROM prepaid_cards WHERE card_number = ?', [card_number], (err, card) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!card) return res.status(404).json({ error: 'البطاقة غير موجودة' });
+        if (!card.is_active || card.blocked) return res.status(400).json({ error: 'البطاقة غير نشطة أو محظورة' });
+
+        const newBalance = card.balance + amount;
+        db.run('UPDATE prepaid_cards SET balance = ? WHERE id = ?', [newBalance, card.id]);
+        db.run(
+            `INSERT INTO card_transactions (card_id, transaction_type, amount, description) VALUES (?, 'recharge', ?, 'شحن رصيد')`,
+            [card.id, amount]
+        );
+        res.json({ success: true, newBalance });
+    });
+});
+
+app.put('/api/prepaid-cards/:cardNumber/block', (req, res) => {
+    const { cardNumber } = req.params;
+    db.run('UPDATE prepaid_cards SET blocked = 1 WHERE card_number = ?', [cardNumber], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+app.put('/api/prepaid-cards/:cardNumber/unblock', (req, res) => {
+    const { cardNumber } = req.params;
+    db.run('UPDATE prepaid_cards SET blocked = 0 WHERE card_number = ?', [cardNumber], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// ================== نظام التحديثات (جديد - من GitHub) ==================
+
+// مزامنة التحديثات من GitHub (للاستخدام الإداري)
+app.post('/api/updates/sync', async (req, res) => {
+    try {
+        const result = await syncUpdateFromGitHub();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// الحصول على أحدث إصدار (مع التوقيع)
 app.get('/api/updates/latest', (req, res) => {
-    db.get('SELECT version, required, notes, file_name, file_size, created_at FROM updates ORDER BY created_at DESC LIMIT 1', (err, row) => {
+    db.get('SELECT * FROM updates ORDER BY release_date DESC LIMIT 1', (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.json({ success: true, data: null });
-        row.download_url = `/api/updates/download/${row.version}`;
-        res.json({ success: true, data: row });
+
+        const payload = {
+            version: row.version,
+            release_date: row.release_date,
+            notes: row.notes,
+            file_url: row.file_url,
+            file_size: row.file_size,
+            mandatory: row.mandatory === 1,
+            channel: row.channel,
+            min_version: row.min_version
+        };
+
+        const signature = signPayload(payload);
+        res.json({ success: true, data: { ...payload, signature } });
     });
 });
 
-app.get('/api/updates/download/:version', (req, res) => {
-    const { version } = req.params;
-    db.get('SELECT * FROM updates WHERE version = ?', [version], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!row || !row.file_path) return res.status(404).json({ error: 'الملف غير موجود' });
-        const absolutePath = path.resolve(row.file_path);
-        if (!fs.existsSync(absolutePath)) return res.status(404).json({ error: 'الملف غير موجود على الخادم' });
-        res.download(absolutePath, row.file_name || 'update.exe');
-    });
-});
-
+// حذف إصدار
 app.delete('/api/updates/:version', (req, res) => {
     const { version } = req.params;
-    db.get('SELECT * FROM updates WHERE version = ?', [version], (err, row) => {
+    db.run('DELETE FROM updates WHERE version = ?', [version], (err) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!row) return res.status(404).json({ error: 'Not found' });
-        if (row.file_path && fs.existsSync(row.file_path)) fs.unlinkSync(row.file_path);
-        db.run('DELETE FROM updates WHERE version = ?', [version], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true });
-        });
+        res.json({ success: true });
     });
 });
 
@@ -610,7 +716,6 @@ setInterval(() => {
             });
         }
     });
-    // إلغاء تنشيط العروض المنتهية تلقائياً
     db.run(`UPDATE promotions SET is_active = 0 WHERE end_date < ? AND is_active = 1`, [now.toISOString()]);
 }, 60 * 1000);
 
