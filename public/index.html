@@ -308,7 +308,7 @@
         } catch(e) { resultDiv.innerHTML = '<span class="text-danger">فشل الاتصال</span>'; }
     }
 
-    // جلب آخر تحديث وتحديث أزرار التحميل
+    // جلب آخر تحديث وتحديث جميع أزرار التحميل برابط مباشر
     async function loadLatestUpdate() {
         const container = document.getElementById('latestUpdate');
         const versionBadge = document.getElementById('latestVersionBadge');
@@ -324,27 +324,27 @@
             if (!update) {
                 container.innerHTML = '<p class="text-muted">لا توجد تحديثات بعد</p>';
                 versionBadge.innerHTML = 'الإصدار الأخير: غير متوفر';
-                // تبقى الروابط فارغة أو نعطي رابطاً افتراضياً (مستودع)
-                mainDownloadBtn.href = 'https://github.com/ikraaoeb-lgtm/MCpos/releases';
-                navDownloadBtn.href = mainDownloadBtn.href;
-                heroDownloadBtn.href = mainDownloadBtn.href;
+                mainDownloadBtn.href = '#';
+                navDownloadBtn.href = '#';
+                heroDownloadBtn.href = '#';
                 return;
             }
 
             const version = update.version;
             const releaseDate = update.release_date ? formatDateArabic(update.release_date) : '';
             const notes = update.notes || '';
-            const fileUrl = update.file_url || 'https://github.com/ikraaoeb-lgtm/MCpos/releases';
+            // رابط التحميل المباشر من GitHub Assets (الرابط المباشر للملف)
+            const directDownloadUrl = update.file_url || '#';
 
             versionBadge.innerHTML = `الإصدار الأخير: ${version} (${releaseDate})`;
-            mainDownloadBtn.href = fileUrl;
-            navDownloadBtn.href = fileUrl;
-            heroDownloadBtn.href = fileUrl;
+            mainDownloadBtn.href = directDownloadUrl;
+            navDownloadBtn.href = directDownloadUrl;
+            heroDownloadBtn.href = directDownloadUrl;
 
             container.innerHTML = `
                 <div class="update-badge d-inline-block mb-2">${version} (${releaseDate})</div>
                 <p>${notes}</p>
-                <a href="${fileUrl}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل الإصدار ${version}</a>
+                <a href="${directDownloadUrl}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل الإصدار ${version}</a>
             `;
         } catch(e) {
             container.innerHTML = '<p class="text-muted">تعذر جلب التحديثات</p>';
