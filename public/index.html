@@ -83,6 +83,7 @@
 
         /* CTA */
         .cta-section { background: var(--dark); color: white; padding: 60px 0; text-align: center; border-radius: var(--radius); margin: 40px 0; }
+        .latest-version { display: inline-block; background: rgba(255,255,255,0.15); padding: 4px 16px; border-radius: 20px; margin-bottom: 10px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -96,7 +97,7 @@
         </a>
         <div class="ms-auto">
             <a href="#pricing" class="btn btn-outline-primary me-2">الأسعار</a>
-            <a href="#download" class="btn btn-primary">تحميل</a>
+            <a href="#download" class="btn btn-primary" id="navDownloadBtn">تحميل</a>
         </div>
     </div>
 </nav>
@@ -109,7 +110,7 @@
                 <h1>MCpos — نظام إدارة المبيعات والمخزون</h1>
                 <p>حل متكامل لنقاط البيع وإدارة المنتجات والعملاء والتقارير مع تحديثات مستمرة وتجربة مجانية.</p>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="#download" class="btn btn-accent"><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
+                    <a href="#download" class="btn btn-accent" id="heroDownloadBtn"><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
                     <a href="#download" class="btn btn-outline-light"><i class="fas fa-play me-2"></i>ابدأ التجربة المجانية</a>
                     <a href="#pricing" class="btn btn-outline-light"><i class="fas fa-tag me-2"></i>عرض الأسعار</a>
                 </div>
@@ -197,9 +198,10 @@
 <!-- CTA -->
 <section class="cta-section" id="download">
     <div class="container">
+        <div class="latest-version" id="latestVersionBadge">الإصدار الأخير: جاري التحميل...</div>
         <h2 class="fw-bold mb-4">ابدأ استخدام MCpos اليوم</h2>
         <p class="lead mb-4">حمل البرنامج الآن وابدأ تجربتك المجانية</p>
-        <a href="https://github.com/ikraaoeb-lgtm/mcpos/releases/download/v1.0.0/MCpos.Setup.1.0.0.exe" class="btn btn-accent btn-lg me-2"><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
+        <a href="#" class="btn btn-accent btn-lg me-2" id="mainDownloadBtn"><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
         <a href="#download" class="btn btn-outline-light btn-lg"><i class="fas fa-play me-2"></i>ابدأ التجربة</a>
     </div>
 </section>
@@ -219,7 +221,6 @@
         current: 'mcpos',
         list: {
             mcpos: { id: 'mcpos', name: 'MCpos', icon: 'fas fa-chart-line', color: '#2563eb' }
-            // يمكن إضافة منتجات مستقبلية هنا
         }
     };
     const activeProduct = productsConfig.list[productsConfig.current];
@@ -241,7 +242,7 @@
         } catch(e) {}
     }
 
-    // جلب العروض (مع تنسيق التاريخ بالأشهر العربية)
+    // تنسيق التاريخ بالأشهر العربية
     function formatDateArabic(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr);
@@ -256,6 +257,7 @@
         return `${day} ${month} ${year}`;
     }
 
+    // جلب العروض
     async function loadPromotions() {
         const container = document.getElementById('promotionsContainer');
         try {
@@ -306,24 +308,48 @@
         } catch(e) { resultDiv.innerHTML = '<span class="text-danger">فشل الاتصال</span>'; }
     }
 
-    // جلب آخر تحديث
+    // جلب آخر تحديث وتحديث أزرار التحميل
     async function loadLatestUpdate() {
         const container = document.getElementById('latestUpdate');
+        const versionBadge = document.getElementById('latestVersionBadge');
+        const mainDownloadBtn = document.getElementById('mainDownloadBtn');
+        const navDownloadBtn = document.getElementById('navDownloadBtn');
+        const heroDownloadBtn = document.getElementById('heroDownloadBtn');
+
         try {
             const res = await fetch('/api/updates/latest');
             const data = await res.json();
             const update = data.data;
+
             if (!update) {
                 container.innerHTML = '<p class="text-muted">لا توجد تحديثات بعد</p>';
+                versionBadge.innerHTML = 'الإصدار الأخير: غير متوفر';
+                // تبقى الروابط فارغة أو نعطي رابطاً افتراضياً (مستودع)
+                mainDownloadBtn.href = 'https://github.com/ikraaoeb-lgtm/MCpos/releases';
+                navDownloadBtn.href = mainDownloadBtn.href;
+                heroDownloadBtn.href = mainDownloadBtn.href;
                 return;
             }
-            const createdDate = update.created_at ? formatDateArabic(update.created_at) : '';
+
+            const version = update.version;
+            const releaseDate = update.release_date ? formatDateArabic(update.release_date) : '';
+            const notes = update.notes || '';
+            const fileUrl = update.file_url || 'https://github.com/ikraaoeb-lgtm/MCpos/releases';
+
+            versionBadge.innerHTML = `الإصدار الأخير: ${version} (${releaseDate})`;
+            mainDownloadBtn.href = fileUrl;
+            navDownloadBtn.href = fileUrl;
+            heroDownloadBtn.href = fileUrl;
+
             container.innerHTML = `
-                <div class="update-badge d-inline-block mb-2">آخر إصدار: ${update.version} (${createdDate})</div>
-                <p>${update.notes || ''}</p>
-                <a href="${update.download_url || '#'}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل التحديث</a>
+                <div class="update-badge d-inline-block mb-2">${version} (${releaseDate})</div>
+                <p>${notes}</p>
+                <a href="${fileUrl}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل الإصدار ${version}</a>
             `;
-        } catch(e) { container.innerHTML = '<p class="text-muted">تعذر جلب التحديثات</p>'; }
+        } catch(e) {
+            container.innerHTML = '<p class="text-muted">تعذر جلب التحديثات</p>';
+            versionBadge.innerHTML = 'الإصدار الأخير: غير متوفر';
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
