@@ -25,14 +25,18 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// تخزين الملفات المؤقتة (للاستيراد)
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } });
+
+// تخزين ملفات الرفع (للاستيراد)
+const deviceUpload = multer({ dest: uploadsDir });
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---- المفتاح الخاص (من متغير البيئة أو ملف محلي للتطوير فقط) ----
+// ---- المفتاح الخاص ----
 const privateKey = process.env.PRIVATE_KEY
     || (fs.existsSync('private.pem') ? fs.readFileSync('private.pem', 'utf8') : '');
 
@@ -41,7 +45,7 @@ if (!privateKey) {
     process.exit(1);
 }
 
-// ---- حماية لوحة الإدارة بكلمة مرور ----
+// ---- حماية لوحة الإدارة ----
 const ADMIN_USER = process.env.ADMIN_USER || 'mcpos';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'mcpos2025';
 
@@ -55,7 +59,7 @@ app.use('/admin', (req, res, next) => {
     res.status(401).send('Authentication required.');
 });
 
-// صفحة لوحة الإدارة (بعد الحماية)
+// صفحة لوحة الإدارة
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
@@ -74,16 +78,13 @@ const db = new sqlite3.Database(dbPath);
 // تفعيل WAL
 db.run('PRAGMA journal_mode=WAL;');
 
-// ---- طباعة الجداول الموجودة عند بدء التشغيل (للتشخيص) ----
+// طباعة الجداول
 db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
-    if (err) {
-        console.error('❌ خطأ في قراءة الجداول:', err.message);
-    } else {
-        console.log('📋 الجداول الموجودة:', tables.map(t => t.name).join(', '));
-    }
+    if (err) console.error('❌ خطأ في قراءة الجداول:', err.message);
+    else console.log('📋 الجداول الموجودة:', tables.map(t => t.name).join(', '));
 });
 
-// ---- إنشاء الجداول (مع معالجة الأخطاء) ----
+// ---- إنشاء الجداول (بدون بطاقات الدفع المسبق) ----
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS devices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,7 +109,8 @@ db.serialize(() => {
         last_seen TEXT,
         created_at TEXT,
         updated_at TEXT,
-        license_signature TEXT
+        license_signature TEXT,
+        code_promo TEXT          -- حقل جديد للكود الترويجي
     )`, (err) => {
         if (err) console.error('❌ فشل إنشاء جدول devices:', err.message);
         else console.log('✅ جدول devices جاهز');
@@ -137,7 +139,6 @@ db.serialize(() => {
         value TEXT
     )`);
 
-    // جدول التحديثات الجديد (متوافق مع GitHub)
     db.run(`CREATE TABLE IF NOT EXISTS updates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         version TEXT NOT NULL,
@@ -162,12 +163,14 @@ db.serialize(() => {
         end_date TEXT NOT NULL,
         is_active INTEGER DEFAULT 1,
         created_at TEXT
-    )`, (err) => {
-        if (err) console.error('❌ فشل إنشاء جدول promotions:', err.message);
-        else console.log('✅ جدول promotions جاهز');
+    )`);
+
+    // إضافة عمود code_promo إذا لم يكن موجوداً (للترقية)
+    db.run(`ALTER TABLE devices ADD COLUMN code_promo TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.warn('⚠️ ALTER TABLE devices code_promo:', err.message);
     });
 
-    // إعدادات افتراضية (بدون اشتراك شهري)
+    // إعدادات افتراضية
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('trial_days', '14')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('sync_interval', '15')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('offline_grace_period', '90')`);
@@ -188,13 +191,14 @@ function ensureDeviceExists(hwid, extraData, callback) {
     const phone = extraData?.phone || '';
     const managerName = extraData?.manager_name || '';
     const email = extraData?.email || '';
+    const codePromo = extraData?.code_promo || '';
 
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (row) {
             if (extraData) {
                 db.run(
-                    `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
-                    [shopName, managerName, email, phone, now, now, hwid]
+                    `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, code_promo = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
+                    [shopName, managerName, email, phone, codePromo, now, now, hwid]
                 );
             } else {
                 db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
@@ -204,9 +208,9 @@ function ensureDeviceExists(hwid, extraData, callback) {
             });
         } else {
             db.run(
-                `INSERT INTO devices (hwid, shop_name, manager_name, email, phone, status, trial_start, trial_end, created_at, updated_at, last_seen)
-                 VALUES (?, ?, ?, ?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
-                [hwid, shopName, managerName, email, phone, now, now, now],
+                `INSERT INTO devices (hwid, shop_name, manager_name, email, phone, code_promo, status, trial_start, trial_end, created_at, updated_at, last_seen)
+                 VALUES (?, ?, ?, ?, ?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
+                [hwid, shopName, managerName, email, phone, codePromo, now, now, now],
                 function(err) {
                     if (err) return callback(err);
                     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, newRow) => {
@@ -276,7 +280,7 @@ async function syncUpdateFromGitHub() {
 
 // ====================== API Routes ======================
 
-// الصفحة الرئيسية: إرسال index.html
+// الصفحة الرئيسية
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -293,7 +297,7 @@ app.get('/api/devices', (req, res) => {
 
 // تسجيل جهاز جديد (مع تحديث البيانات إذا كان موجوداً)
 app.post('/api/devices/register', (req, res) => {
-    const { hwid, shop_name, manager_name, email, phone, type, activation_type, discount_code } = req.body;
+    const { hwid, shop_name, manager_name, email, phone, type, activation_type, discount_code, code_promo } = req.body;
     if (!hwid) return res.status(400).json({ success: false, error: 'HWID required' });
 
     const now = new Date().toISOString();
@@ -302,8 +306,8 @@ app.post('/api/devices/register', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
             db.run(
-                `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
-                [shop_name || row.shop_name, manager_name || row.manager_name, email || row.email, phone || row.phone, now, now, hwid]
+                `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, code_promo = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
+                [shop_name || row.shop_name, manager_name || row.manager_name, email || row.email, phone || row.phone, code_promo || row.code_promo, now, now, hwid]
             );
             db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, updatedRow) => {
                 const payload = {
@@ -329,9 +333,9 @@ app.post('/api/devices/register', (req, res) => {
             const secret = crypto.randomBytes(16).toString('hex');
 
             db.run(
-                `INSERT INTO devices (hwid, device_secret, shop_name, manager_name, email, phone, status, activation_type, trial_start, trial_end, server_trial_end, created_at, updated_at, last_seen)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-                [hwid, secret, shop_name, manager_name, email, phone, status, activation_type || null, trial_start, trial_end, trial_end, now, now, now],
+                `INSERT INTO devices (hwid, device_secret, shop_name, manager_name, email, phone, code_promo, status, activation_type, trial_start, trial_end, server_trial_end, created_at, updated_at, last_seen)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                [hwid, secret, shop_name, manager_name, email, phone, code_promo || null, status, activation_type || null, trial_start, trial_end, trial_end, now, now, now],
                 function (err) {
                     if (err) return res.status(500).json({ error: err.message });
 
@@ -438,6 +442,26 @@ app.put('/api/devices/:hwid', (req, res) => {
     });
 });
 
+// تعديل معلومات الجهاز (اسم المحل + رقم الهاتف + code_promo)
+app.put('/api/devices/:hwid/info', (req, res) => {
+    const { hwid } = req.params;
+    const { shop_name, phone, code_promo } = req.body;
+    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
+        if (!row) return res.status(404).json({ error: 'Device not found' });
+        const updates = {};
+        if (shop_name !== undefined) updates.shop_name = shop_name;
+        if (phone !== undefined) updates.phone = phone;
+        if (code_promo !== undefined) updates.code_promo = code_promo;
+        if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No fields to update' });
+        updates.updated_at = new Date().toISOString();
+        const sql = `UPDATE devices SET ${Object.keys(updates).map(k => `${k}=?`).join(', ')} WHERE hwid=?`;
+        db.run(sql, [...Object.values(updates), hwid], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
+    });
+});
+
 // تمديد التجربة
 app.post('/api/devices/:hwid/extend-trial', (req, res) => {
     const { hwid } = req.params;
@@ -462,6 +486,38 @@ app.delete('/api/devices/:hwid', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
     });
+});
+
+// تصدير قائمة الأجهزة إلى JSON
+app.get('/api/devices/export', (req, res) => {
+    db.all('SELECT * FROM devices', (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.setHeader('Content-Disposition', 'attachment; filename=devices_export.json');
+        res.json(rows);
+    });
+});
+
+// استيراد قائمة أجهزة من ملف JSON
+app.post('/api/devices/import', deviceUpload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    try {
+        const data = JSON.parse(fs.readFileSync(req.file.path, 'utf8'));
+        if (!Array.isArray(data)) return res.status(400).json({ error: 'Invalid JSON format: array expected' });
+        let imported = 0;
+        const stmt = db.prepare(`INSERT OR REPLACE INTO devices (hwid, shop_name, phone, code_promo, status, trial_start, trial_end, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)`);
+        db.serialize(() => {
+            data.forEach(device => {
+                const { hwid, shop_name, phone, code_promo, status, trial_start, trial_end } = device;
+                stmt.run(hwid, shop_name, phone, code_promo, status || 'trial', trial_start, trial_end, new Date().toISOString(), new Date().toISOString());
+                imported++;
+            });
+            stmt.finalize();
+            fs.unlinkSync(req.file.path); // حذف الملف المؤقت
+            res.json({ success: true, imported });
+        });
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
 });
 
 // نبضات القلب
@@ -555,7 +611,6 @@ app.post('/api/promotions', (req, res) => {
     if (!title || !discount_type || !discount_value || !start_date || !end_date) {
         return res.status(400).json({ error: 'جميع الحقول المطلوبة مفقودة' });
     }
-
     db.run(
         `INSERT INTO promotions (title, description, discount_type, discount_value, start_date, end_date, is_active, created_at)
          VALUES (?,?,?,?,?,?,1,?)`,
@@ -582,79 +637,11 @@ app.delete('/api/promotions/:id', (req, res) => {
     });
 });
 
-// ================== نظام بطاقات الدفع المسبق ==================
-app.get('/api/prepaid-cards', (req, res) => {
-    db.all('SELECT * FROM prepaid_cards ORDER BY issue_date DESC', (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, data: rows || [] });
-    });
-});
+// ================== نظام بطاقات الدفع المسبق (محذوف) ==================
+// تمت إزالة جميع routes المتعلقة بـ prepaid_cards
 
-app.post('/api/prepaid-cards/issue', (req, res) => {
-    const { balance, customer_name, phone, expiry_date } = req.body;
-    if (!balance || balance <= 0) {
-        return res.status(400).json({ error: 'الرصيد مطلوب' });
-    }
-
-    const cardNumber = 'CARD-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
-    const pin = Math.random().toString().slice(2, 8);
-    const pinHash = crypto.createHash('sha256').update(pin).digest('hex');
-
-    db.run(
-        `INSERT INTO prepaid_cards (card_number, pin_hash, balance, initial_balance, issue_date, expiry_date, customer_name, customer_phone)
-         VALUES (?, ?, ?, ?, date('now'), ?, ?, ?)`,
-        [cardNumber, pinHash, balance, balance, expiry_date || null, customer_name || null, phone || null],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            db.run(
-                `INSERT INTO card_transactions (card_id, transaction_type, amount, description) VALUES (?, 'issue', ?, 'إصدار بطاقة جديدة')`,
-                [this.lastID, balance]
-            );
-            res.json({ success: true, cardNumber, pin });
-        }
-    );
-});
-
-app.post('/api/prepaid-cards/recharge', (req, res) => {
-    const { card_number, amount } = req.body;
-    if (!card_number || !amount || amount <= 0) {
-        return res.status(400).json({ error: 'رقم البطاقة وقيمة الشحن مطلوبان' });
-    }
-
-    db.get('SELECT id, balance, is_active, blocked FROM prepaid_cards WHERE card_number = ?', [card_number], (err, card) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!card) return res.status(404).json({ error: 'البطاقة غير موجودة' });
-        if (!card.is_active || card.blocked) return res.status(400).json({ error: 'البطاقة غير نشطة أو محظورة' });
-
-        const newBalance = card.balance + amount;
-        db.run('UPDATE prepaid_cards SET balance = ? WHERE id = ?', [newBalance, card.id]);
-        db.run(
-            `INSERT INTO card_transactions (card_id, transaction_type, amount, description) VALUES (?, 'recharge', ?, 'شحن رصيد')`,
-            [card.id, amount]
-        );
-        res.json({ success: true, newBalance });
-    });
-});
-
-app.put('/api/prepaid-cards/:cardNumber/block', (req, res) => {
-    const { cardNumber } = req.params;
-    db.run('UPDATE prepaid_cards SET blocked = 1 WHERE card_number = ?', [cardNumber], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-    });
-});
-
-app.put('/api/prepaid-cards/:cardNumber/unblock', (req, res) => {
-    const { cardNumber } = req.params;
-    db.run('UPDATE prepaid_cards SET blocked = 0 WHERE card_number = ?', [cardNumber], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-    });
-});
-
-// ================== نظام التحديثات (جديد - من GitHub) ==================
-
-// مزامنة التحديثات من GitHub (للاستخدام الإداري)
+// ================== نظام التحديثات (من GitHub) ==================
+// مزامنة التحديثات من GitHub
 app.post('/api/updates/sync', async (req, res) => {
     try {
         const result = await syncUpdateFromGitHub();
@@ -662,6 +649,14 @@ app.post('/api/updates/sync', async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
+});
+
+// الحصول على جميع التحديثات (للوحة)
+app.get('/api/updates', (req, res) => {
+    db.all('SELECT * FROM updates ORDER BY release_date DESC', (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, data: rows || [] });
+    });
 });
 
 // الحصول على أحدث إصدار (مع التوقيع)
@@ -680,7 +675,6 @@ app.get('/api/updates/latest', (req, res) => {
             channel: row.channel,
             min_version: row.min_version
         };
-
         const signature = signPayload(payload);
         res.json({ success: true, data: { ...payload, signature } });
     });
