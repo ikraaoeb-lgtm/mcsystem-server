@@ -37,6 +37,7 @@
         .btn-outline-primary:hover { background: var(--primary); color: white; }
         .btn-accent { background: var(--accent); color: var(--dark); border-radius: 50px; padding: 12px 28px; font-weight: 700; border: none; }
         .btn-accent:hover { background: #f59e0b; transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .btn-accent:disabled, .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
         /* Hero */
         .hero { padding: 80px 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; }
@@ -308,7 +309,7 @@
         } catch(e) { resultDiv.innerHTML = '<span class="text-danger">فشل الاتصال</span>'; }
     }
 
-    // جلب آخر تحديث وتحديث جميع أزرار التحميل برابط مباشر
+    // جلب آخر تحديث وتحديث جميع أزرار التحميل
     async function loadLatestUpdate() {
         const container = document.getElementById('latestUpdate');
         const versionBadge = document.getElementById('latestVersionBadge');
@@ -321,35 +322,64 @@
             const data = await res.json();
             const update = data.data;
 
+            // إذا لم نجد تحديثًا
             if (!update) {
                 container.innerHTML = '<p class="text-muted">لا توجد تحديثات بعد</p>';
                 versionBadge.innerHTML = 'الإصدار الأخير: غير متوفر';
-                mainDownloadBtn.href = '#';
-                navDownloadBtn.href = '#';
-                heroDownloadBtn.href = '#';
+                disableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn]);
                 return;
             }
 
             const version = update.version;
             const releaseDate = update.release_date ? formatDateArabic(update.release_date) : '';
             const notes = update.notes || '';
-            // رابط التحميل المباشر من GitHub Assets (الرابط المباشر للملف)
-            const directDownloadUrl = update.file_url || '#';
+            const fileUrl = update.file_url;
 
             versionBadge.innerHTML = `الإصدار الأخير: ${version} (${releaseDate})`;
-            mainDownloadBtn.href = directDownloadUrl;
-            navDownloadBtn.href = directDownloadUrl;
-            heroDownloadBtn.href = directDownloadUrl;
 
-            container.innerHTML = `
-                <div class="update-badge d-inline-block mb-2">${version} (${releaseDate})</div>
-                <p>${notes}</p>
-                <a href="${directDownloadUrl}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل الإصدار ${version}</a>
-            `;
+            // التحقق من وجود رابط تحميل مباشر
+            if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
+                // رابط مباشر صالح
+                mainDownloadBtn.href = fileUrl;
+                mainDownloadBtn.removeAttribute('disabled');
+                mainDownloadBtn.title = 'تحميل البرنامج';
+
+                navDownloadBtn.href = fileUrl;
+                navDownloadBtn.removeAttribute('disabled');
+                navDownloadBtn.title = 'تحميل';
+
+                heroDownloadBtn.href = fileUrl;
+                heroDownloadBtn.removeAttribute('disabled');
+                heroDownloadBtn.title = 'تحميل البرنامج';
+
+                container.innerHTML = `
+                    <div class="update-badge d-inline-block mb-2">${version} (${releaseDate})</div>
+                    <p>${notes}</p>
+                    <a href="${fileUrl}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل الإصدار ${version}</a>
+                `;
+            } else {
+                // لا يوجد رابط مباشر (ملف غير موجود في GitHub Release)
+                disableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn]);
+                versionBadge.innerHTML = `الإصدار الأخير: ${version} (${releaseDate})`;
+                container.innerHTML = `
+                    <div class="update-badge d-inline-block mb-2">${version} (${releaseDate})</div>
+                    <p>${notes}</p>
+                    <p class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>رابط التحميل غير متوفر حالياً، يرجى مراجعة صفحة الإصدارات على GitHub.</p>
+                `;
+            }
         } catch(e) {
             container.innerHTML = '<p class="text-muted">تعذر جلب التحديثات</p>';
             versionBadge.innerHTML = 'الإصدار الأخير: غير متوفر';
+            disableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn]);
         }
+    }
+
+    function disableDownloadButtons(buttons) {
+        buttons.forEach(btn => {
+            btn.removeAttribute('href');
+            btn.setAttribute('disabled', 'disabled');
+            btn.title = 'رابط التحميل غير متوفر حالياً';
+        });
     }
 
     document.addEventListener('DOMContentLoaded', () => {

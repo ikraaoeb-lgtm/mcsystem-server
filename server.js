@@ -227,7 +227,7 @@ function ensureDeviceExists(hwid, extraData, callback) {
     });
 }
 
-// دالة جلب أحدث إصدار من GitHub
+// دالة جلب أحدث إصدار من GitHub (معالجة محسنة)
 async function fetchLatestGitHubRelease() {
     try {
         const response = await fetch(GITHUB_API_URL, {
@@ -238,12 +238,30 @@ async function fetchLatestGitHubRelease() {
         });
         if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
         const release = await response.json();
+        
+        // البحث عن الملف المباشر في الأصول (assets)
+        let fileUrl = null;
+        if (release.assets && release.assets.length > 0) {
+            // نبحث عن أول ملف .exe أو .dmg أو .AppImage حسب الأولوية
+            const asset = release.assets.find(a => a.name && a.name.endsWith('.exe')) 
+                       || release.assets.find(a => a.name && a.name.endsWith('.dmg'))
+                       || release.assets.find(a => a.name && a.name.endsWith('.AppImage'))
+                       || release.assets[0];
+            if (asset && asset.browser_download_url) {
+                fileUrl = asset.browser_download_url;
+            }
+        }
+        // إذا لم نجد ملفًا في assets، نستخدم رابط الإصدار نفسه (صفحة الإصدار)
+        if (!fileUrl) {
+            fileUrl = release.html_url || null;
+        }
+
         return {
-            version: release.tag_name.replace('v', ''),
-            releaseDate: release.published_at,
+            version: release.tag_name ? release.tag_name.replace('v', '') : '0.0.0',
+            releaseDate: release.published_at || new Date().toISOString(),
             notes: release.body || '',
-            fileUrl: release.assets?.[0]?.browser_download_url || release.html_url,
-            fileSize: release.assets?.[0]?.size || 0,
+            fileUrl: fileUrl,
+            fileSize: (release.assets && release.assets.length > 0) ? (release.assets[0].size || 0) : 0,
             prerelease: release.prerelease || false
         };
     } catch (error) {
@@ -252,35 +270,49 @@ async function fetchLatestGitHubRelease() {
     }
 }
 
-// دالة مزامنة آخر إصدار إلى قاعدة البيانات
-async function syncUpdateFromGitHub() {
-    const release = await fetchLatestGitHubRelease();
-    if (!release) return { success: false, error: 'تعذر جلب بيانات الإصدار من GitHub' };
-
-    return new Promise((resolve, reject) => {
-        db.get('SELECT id FROM updates WHERE version = ?', [release.version], (err, existing) => {
-            if (err) return reject(err);
-            if (existing) {
-                db.run(
-                    `UPDATE updates SET release_date=?, notes=?, file_url=?, file_size=?, updated_at=CURRENT_TIMESTAMP WHERE version=?`,
-                    [release.releaseDate, release.notes, release.fileUrl, release.fileSize, release.version],
-                    (err) => {
-                        if (err) return reject(err);
-                        resolve({ success: true, version: release.version });
-                    }
-                );
-            } else {
-                db.run(
-                    `INSERT INTO updates (version, release_date, notes, file_url, file_size, mandatory, channel, min_version) VALUES (?,?,?,?,?,?,?,?)`,
-                    [release.version, release.releaseDate, release.notes, release.fileUrl, release.fileSize, 0, 'stable', '1.0.0'],
-                    function(err) {
-                        if (err) return reject(err);
-                        resolve({ success: true, version: release.version });
-                    }
-                );
+// دالة مزامنة آخر إصدار إلى قاعدة البيانات مع إعادة المحاولة
+async function syncUpdateFromGitHub(retries = 3, delay = 2000) {
+    let lastError;
+    for (let i = 0; i < retries; i++) {
+        try {
+            const release = await fetchLatestGitHubRelease();
+            if (!release) {
+                throw new Error('تعذر جلب بيانات الإصدار من GitHub');
             }
-        });
-    });
+
+            return new Promise((resolve, reject) => {
+                db.get('SELECT id FROM updates WHERE version = ?', [release.version], (err, existing) => {
+                    if (err) return reject(err);
+                    if (existing) {
+                        db.run(
+                            `UPDATE updates SET release_date=?, notes=?, file_url=?, file_size=?, updated_at=CURRENT_TIMESTAMP WHERE version=?`,
+                            [release.releaseDate, release.notes, release.fileUrl, release.fileSize, release.version],
+                            (err) => {
+                                if (err) return reject(err);
+                                resolve({ success: true, version: release.version, fileUrl: release.fileUrl });
+                            }
+                        );
+                    } else {
+                        db.run(
+                            `INSERT INTO updates (version, release_date, notes, file_url, file_size, mandatory, channel, min_version) VALUES (?,?,?,?,?,?,?,?)`,
+                            [release.version, release.releaseDate, release.notes, release.fileUrl, release.fileSize, 0, 'stable', '1.0.0'],
+                            function(err) {
+                                if (err) return reject(err);
+                                resolve({ success: true, version: release.version, fileUrl: release.fileUrl });
+                            }
+                        );
+                    }
+                });
+            });
+        } catch (error) {
+            console.error(`محاولة ${i + 1} فشلت:`, error.message);
+            lastError = error;
+            if (i < retries - 1) {
+                await new Promise(res => setTimeout(res, delay));
+            }
+        }
+    }
+    throw lastError || new Error('فشلت كل المحاولات');
 }
 
 // ====================== API Routes ======================
@@ -616,7 +648,7 @@ app.delete('/api/promotions/:id', (req, res) => {
 
 // ================== نظام التحديثات (من GitHub فقط) ==================
 
-// مزامنة التحديثات من GitHub (للاستخدام الإداري)
+// مزامنة التحديثات من GitHub (للاستخدام الإداري) - مع إعادة المحاولة
 app.post('/api/updates/sync', async (req, res) => {
     try {
         const result = await syncUpdateFromGitHub();
@@ -754,9 +786,9 @@ setInterval(async () => {
     }
 }, 30 * 60 * 1000);
 
-// مزامنة أولى عند التشغيل
+// مزامنة أولى عند التشغيل مع تأخير بسيط
 setTimeout(() => {
-    syncUpdateFromGitHub().then(() => console.log('✅ تمت مزامنة التحديثات الأولية من GitHub')).catch(e => console.error('❌ فشلت المزامنة الأولية:', e.message));
+    syncUpdateFromGitHub().then(r => console.log('✅ تمت مزامنة التحديثات الأولية من GitHub', r.version)).catch(e => console.error('❌ فشلت المزامنة الأولية:', e.message));
 }, 5000);
 
 // ---- تشغيل الخادم ----
