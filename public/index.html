@@ -25,19 +25,22 @@
             --radius: 16px;
             --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
             --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 10px -6px rgba(0,0,0,0.1);
+            --whatsapp: #25D366;
+            --telegram: #0088cc;
+            --facebook: #1877f2;
         }
         * { font-family: 'Tajawal', sans-serif; }
         body { background: var(--light); color: var(--text); }
         .navbar { background: white; border-bottom: 1px solid var(--border); box-shadow: var(--shadow); }
         .navbar-brand img { height: 40px; }
         .navbar-brand span { font-weight: 800; font-size: 1.5rem; color: var(--primary); }
-        .btn-primary { background: var(--primary); border: none; border-radius: 50px; padding: 12px 28px; font-weight: 600; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-outline-primary { border: 2px solid var(--primary); color: var(--primary); border-radius: 50px; padding: 10px 24px; font-weight: 600; }
-        .btn-outline-primary:hover { background: var(--primary); color: white; }
-        .btn-accent { background: var(--accent); color: var(--dark); border-radius: 50px; padding: 12px 28px; font-weight: 700; border: none; }
-        .btn-accent:hover { background: #f59e0b; transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-        .btn-accent:disabled, .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-primary { background: var(--primary); border: none; border-radius: 50px; padding: 12px 28px; font-weight: 600; transition: all 0.3s; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .btn-outline-primary { border: 2px solid var(--primary); color: var(--primary); border-radius: 50px; padding: 10px 24px; font-weight: 600; transition: all 0.3s; }
+        .btn-outline-primary:hover:not(:disabled) { background: var(--primary); color: white; transform: translateY(-2px); }
+        .btn-accent { background: var(--accent); color: var(--dark); border-radius: 50px; padding: 12px 28px; font-weight: 700; border: none; transition: all 0.3s; }
+        .btn-accent:hover:not(:disabled) { background: #f59e0b; transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .btn-accent:disabled, .btn-primary:disabled, .btn-outline-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
         /* Hero */
         .hero { padding: 80px 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; }
@@ -65,8 +68,9 @@
         }
         .pricing-card.popular { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
         .price-list { list-style: none; padding: 0; margin: 30px 0; }
-        .price-list li { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
-        .price-value { font-weight: 700; color: var(--primary); }
+        .price-list li { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .price-list li:last-child { border-bottom: none; }
+        .price-value { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
 
         /* Promotions */
         .promo-card {
@@ -85,6 +89,43 @@
         /* CTA */
         .cta-section { background: var(--dark); color: white; padding: 60px 0; text-align: center; border-radius: var(--radius); margin: 40px 0; }
         .latest-version { display: inline-block; background: rgba(255,255,255,0.15); padding: 4px 16px; border-radius: 20px; margin-bottom: 10px; font-size: 0.9rem; }
+
+        /* Contact Section */
+        .contact-section { padding: 60px 0; }
+        .contact-card {
+            background: white; border-radius: var(--radius); padding: 24px 20px;
+            box-shadow: var(--shadow); text-align: center; transition: 0.3s; height: 100%;
+            border: 2px solid transparent; cursor: pointer; text-decoration: none; color: var(--text);
+            display: block;
+        }
+        .contact-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+        .contact-card.whatsapp:hover { border-color: var(--whatsapp); }
+        .contact-card.telegram:hover { border-color: var(--telegram); }
+        .contact-card.facebook:hover { border-color: var(--facebook); }
+        .contact-icon {
+            width: 60px; height: 60px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; margin: 0 auto 16px;
+            font-size: 1.6rem; color: white;
+        }
+        .contact-icon.whatsapp { background: var(--whatsapp); }
+        .contact-icon.telegram { background: var(--telegram); }
+        .contact-icon.facebook { background: var(--facebook); }
+        .contact-card h5 { font-weight: 700; margin-bottom: 8px; }
+        .contact-card p { color: var(--text-muted); margin: 0; font-size: 0.9rem; direction: ltr; }
+
+        /* Footer */
+        footer { background: #0f172a; color: #94a3b8; padding: 30px 0 20px; }
+        footer a { color: #cbd5e1; text-decoration: none; transition: color 0.3s; }
+        footer a:hover { color: white; }
+        .footer-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin: 16px 0; }
+        .footer-contact a { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 1rem; }
+            .footer-contact { flex-direction: column; align-items: center; gap: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -98,7 +139,7 @@
         </a>
         <div class="ms-auto">
             <a href="#pricing" class="btn btn-outline-primary me-2">الأسعار</a>
-            <a href="#download" class="btn btn-primary" id="navDownloadBtn">تحميل</a>
+            <a href="#download" class="btn btn-primary" id="navDownloadBtn" disabled>تحميل</a>
         </div>
     </div>
 </nav>
@@ -111,8 +152,8 @@
                 <h1>MCpos — نظام إدارة المبيعات والمخزون</h1>
                 <p>حل متكامل لنقاط البيع وإدارة المنتجات والعملاء والتقارير مع تحديثات مستمرة وتجربة مجانية.</p>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="#download" class="btn btn-accent" id="heroDownloadBtn"><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
-                    <a href="#download" class="btn btn-outline-light"><i class="fas fa-play me-2"></i>ابدأ التجربة المجانية</a>
+                    <a href="#download" class="btn btn-accent" id="heroDownloadBtn" disabled><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
+                    <a href="#features" class="btn btn-outline-light"><i class="fas fa-play me-2"></i>تعرف على الميزات</a>
                     <a href="#pricing" class="btn btn-outline-light"><i class="fas fa-tag me-2"></i>عرض الأسعار</a>
                 </div>
             </div>
@@ -145,7 +186,9 @@
         <div class="pricing-card popular" id="pricingCard">
             <h3 class="fw-bold">MCpos</h3>
             <p class="text-muted">اشتراك يناسب احتياجات متجرك</p>
-            <ul class="price-list" id="priceList"></ul>
+            <ul class="price-list" id="priceList">
+                <li><span>جاري تحميل الأسعار...</span></li>
+            </ul>
             <a href="#download" class="btn btn-primary btn-lg w-100 mt-3">ابدأ الآن</a>
         </div>
     </div>
@@ -155,7 +198,9 @@
 <section id="promotions" class="py-5">
     <div class="container">
         <h2 class="text-center fw-bold mb-5">العروض والخصومات</h2>
-        <div id="promotionsContainer" class="row g-4 justify-content-center"></div>
+        <div id="promotionsContainer" class="row g-4 justify-content-center">
+            <div class="col-12 text-center text-muted">جاري تحميل العروض...</div>
+        </div>
     </div>
 </section>
 
@@ -179,7 +224,9 @@
 <section id="updates" class="py-5">
     <div class="container">
         <h2 class="text-center fw-bold mb-5">آخر التحديثات</h2>
-        <div id="latestUpdate" class="text-center"></div>
+        <div id="latestUpdate" class="text-center">
+            <p class="text-muted">جاري تحميل معلومات التحديث...</p>
+        </div>
     </div>
 </section>
 
@@ -202,16 +249,61 @@
         <div class="latest-version" id="latestVersionBadge">الإصدار الأخير: جاري التحميل...</div>
         <h2 class="fw-bold mb-4">ابدأ استخدام MCpos اليوم</h2>
         <p class="lead mb-4">حمل البرنامج الآن وابدأ تجربتك المجانية</p>
-        <a href="#" class="btn btn-accent btn-lg me-2" id="mainDownloadBtn"><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
-        <a href="#download" class="btn btn-outline-light btn-lg"><i class="fas fa-play me-2"></i>ابدأ التجربة</a>
+        <a href="#" class="btn btn-accent btn-lg me-2" id="mainDownloadBtn" disabled><i class="fas fa-download me-2"></i>تحميل البرنامج</a>
+        <a href="#contact" class="btn btn-outline-light btn-lg"><i class="fas fa-headset me-2"></i>تواصل معنا</a>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section id="contact" class="contact-section">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5">تواصل معنا</h2>
+        <p class="text-center text-muted mb-5">نحن هنا للإجابة على استفساراتكم ومساعدتكم</p>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4">
+                <a href="https://wa.me/213772945233" target="_blank" rel="noopener noreferrer" class="contact-card whatsapp">
+                    <div class="contact-icon whatsapp"><i class="fab fa-whatsapp"></i></div>
+                    <h5>واتساب</h5>
+                    <p>+213 772 94 52 33</p>
+                    <small class="text-success">انقر للمراسلة</small>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="https://t.me/213772945233" target="_blank" rel="noopener noreferrer" class="contact-card telegram">
+                    <div class="contact-icon telegram"><i class="fab fa-telegram-plane"></i></div>
+                    <h5>تيليغرام</h5>
+                    <p>@213772945233</p>
+                    <small class="text-info">انقر للمراسلة</small>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="https://www.facebook.com/share/18spe7rkQW/" target="_blank" rel="noopener noreferrer" class="contact-card facebook">
+                    <div class="contact-icon facebook"><i class="fab fa-facebook-f"></i></div>
+                    <h5>صفحة الفايسبوك</h5>
+                    <p>MCpos على فيسبوك</p>
+                    <small class="text-primary">انقر لزيارة الصفحة</small>
+                </a>
+            </div>
+        </div>
     </div>
 </section>
 
 <!-- Footer -->
-<footer class="py-4 bg-dark text-white text-center">
-    <div class="container">
+<footer>
+    <div class="container text-center">
+        <div class="footer-contact">
+            <a href="https://wa.me/213772945233" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-whatsapp" style="color:var(--whatsapp);font-size:1.1rem;"></i> واتساب: 213772945233
+            </a>
+            <a href="https://t.me/213772945233" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-telegram-plane" style="color:var(--telegram);font-size:1.1rem;"></i> تيليغرام: 213772945233
+            </a>
+            <a href="https://www.facebook.com/share/18spe7rkQW/" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-facebook-f" style="color:var(--facebook);font-size:1.1rem;"></i> صفحة الفايسبوك
+            </a>
+        </div>
         <p class="mb-1">© 2025 MCpos Team. جميع الحقوق محفوظة.</p>
-        <small>للدعم: <a href="mailto:support@mcpos.dz" class="text-warning">support@mcpos.dz</a></small>
+        <small>للدعم: <a href="mailto:support@mcpos.dz" style="color:var(--accent);">support@mcpos.dz</a></small>
     </div>
 </footer>
 
@@ -235,12 +327,17 @@
                 const prices = data.data;
                 const list = document.getElementById('priceList');
                 const labels = { quarterly: 'ربع سنوي', semiannual: 'نصف سنوي', annual: 'سنوي', permanent: 'ترخيص دائم' };
+                const icons = { quarterly: 'fa-calendar-alt', semiannual: 'fa-calendar-check', annual: 'fa-calendar', permanent: 'fa-infinity' };
                 list.innerHTML = Object.entries(labels).map(([key, label]) => {
                     const val = prices[key] || 0;
-                    return `<li><span>${label}</span><span class="price-value">${val} د.ج</span></li>`;
+                    return `<li><span><i class="far ${icons[key] || 'fa-tag'} me-2"></i>${label}</span><span class="price-value">${val.toLocaleString('ar-DZ')} د.ج</span></li>`;
                 }).join('');
+            } else {
+                document.getElementById('priceList').innerHTML = '<li class="text-muted">تعذر تحميل الأسعار</li>';
             }
-        } catch(e) {}
+        } catch(e) {
+            document.getElementById('priceList').innerHTML = '<li class="text-muted">تعذر تحميل الأسعار</li>';
+        }
     }
 
     // تنسيق التاريخ بالأشهر العربية
@@ -275,8 +372,8 @@
                 const diff = endDate - now;
                 let countdownHtml = '';
                 if (diff > 0) {
-                    const days = Math.floor(diff / (1000*60*60*24));
-                    const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     countdownHtml = `<div class="countdown mt-2">⏳ متبقي ${days} يوم و ${hours} ساعة</div>`;
                 } else {
                     countdownHtml = '<div class="text-danger mt-2">انتهى العرض</div>';
@@ -294,6 +391,8 @@
         const code = document.getElementById('discountCodeInput').value.trim();
         const resultDiv = document.getElementById('discountResult');
         if (!code) { resultDiv.innerHTML = '<span class="text-danger">أدخل الكود</span>'; return; }
+        const btn = document.querySelector('#discountCodeInput + button');
+        btn.disabled = true;
         try {
             const res = await fetch('/api/discount-codes/validate', {
                 method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({code})
@@ -301,12 +400,20 @@
             const data = await res.json();
             if (data.valid) {
                 const disc = data.discount;
-                const text = disc.type === 'percent' ? `خصم ${disc.value}%` : `خصم ${disc.value} د.ج`;
-                resultDiv.innerHTML = `<span class="text-success">✓ ${text}</span>`;
+                let text = '';
+                switch(disc.type) {
+                    case 'percent': text = `خصم ${disc.value}%`; break;
+                    case 'fixed': text = `خصم ${disc.value} د.ج`; break;
+                    case 'trial_extend': text = `تمديد الفترة التجريبية ${disc.value} يوم`; break;
+                    case 'subscription_extend': text = `إضافة ${disc.value} أشهر مجانية للاشتراك`; break;
+                    default: text = `كود صالح (${disc.type})`;
+                }
+                resultDiv.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>✓ ${text}</span>`;
             } else {
-                resultDiv.innerHTML = `<span class="text-danger">✗ ${data.error || 'كود غير صالح'}</span>`;
+                resultDiv.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle me-1"></i>✗ ${data.error || 'كود غير صالح'}</span>`;
             }
         } catch(e) { resultDiv.innerHTML = '<span class="text-danger">فشل الاتصال</span>'; }
+        finally { btn.disabled = false; }
     }
 
     // جلب آخر تحديث وتحديث جميع أزرار التحميل
@@ -335,34 +442,22 @@
             const notes = update.notes || '';
             const fileUrl = update.file_url;
 
-            versionBadge.innerHTML = `الإصدار الأخير: ${version} (${releaseDate})`;
+            versionBadge.innerHTML = `الإصدار الأخير: ${version}${releaseDate ? ' (' + releaseDate + ')' : ''}`;
 
             // التحقق من وجود رابط تحميل مباشر
             if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
                 // رابط مباشر صالح
-                mainDownloadBtn.href = fileUrl;
-                mainDownloadBtn.removeAttribute('disabled');
-                mainDownloadBtn.title = 'تحميل البرنامج';
-
-                navDownloadBtn.href = fileUrl;
-                navDownloadBtn.removeAttribute('disabled');
-                navDownloadBtn.title = 'تحميل';
-
-                heroDownloadBtn.href = fileUrl;
-                heroDownloadBtn.removeAttribute('disabled');
-                heroDownloadBtn.title = 'تحميل البرنامج';
-
+                enableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn], fileUrl);
                 container.innerHTML = `
-                    <div class="update-badge d-inline-block mb-2">${version} (${releaseDate})</div>
+                    <div class="update-badge d-inline-block mb-2">${version}${releaseDate ? ' (' + releaseDate + ')' : ''}</div>
                     <p>${notes}</p>
                     <a href="${fileUrl}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل الإصدار ${version}</a>
                 `;
             } else {
                 // لا يوجد رابط مباشر (ملف غير موجود في GitHub Release)
                 disableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn]);
-                versionBadge.innerHTML = `الإصدار الأخير: ${version} (${releaseDate})`;
                 container.innerHTML = `
-                    <div class="update-badge d-inline-block mb-2">${version} (${releaseDate})</div>
+                    <div class="update-badge d-inline-block mb-2">${version}${releaseDate ? ' (' + releaseDate + ')' : ''}</div>
                     <p>${notes}</p>
                     <p class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>رابط التحميل غير متوفر حالياً، يرجى مراجعة صفحة الإصدارات على GitHub.</p>
                 `;
@@ -372,6 +467,14 @@
             versionBadge.innerHTML = 'الإصدار الأخير: غير متوفر';
             disableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn]);
         }
+    }
+
+    function enableDownloadButtons(buttons, url) {
+        buttons.forEach(btn => {
+            btn.href = url;
+            btn.removeAttribute('disabled');
+            btn.title = 'تحميل البرنامج';
+        });
     }
 
     function disableDownloadButtons(buttons) {

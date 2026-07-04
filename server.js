@@ -28,13 +28,6 @@ if (!fs.existsSync(uploadsDir)) {
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } });
 
-// تخزين مؤقت لرفع قاعدة البيانات (disk)
-const dbUploadDir = path.join(uploadsDir, 'db_uploads');
-if (!fs.existsSync(dbUploadDir)) {
-    fs.mkdirSync(dbUploadDir, { recursive: true });
-}
-const uploadDb = multer({ dest: dbUploadDir, limits: { fileSize: 200 * 1024 * 1024 } });
-
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -76,7 +69,7 @@ console.log('📁 مسار قاعدة البيانات:', dbPath);
 if (!fs.existsSync(path.dirname(dbPath))) {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 }
-let db = new sqlite3.Database(dbPath);
+const db = new sqlite3.Database(dbPath);
 
 // تفعيل WAL
 db.run('PRAGMA journal_mode=WAL;');
@@ -115,8 +108,7 @@ db.serialize(() => {
         last_seen TEXT,
         created_at TEXT,
         updated_at TEXT,
-        license_signature TEXT,
-        discount_code TEXT
+        license_signature TEXT
     )`, (err) => {
         if (err) console.error('❌ فشل إنشاء جدول devices:', err.message);
         else console.log('✅ جدول devices جاهز');
@@ -138,6 +130,15 @@ db.serialize(() => {
         expires_at TEXT,
         max_uses INTEGER,
         used_count INTEGER DEFAULT 0
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS activation_codes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        created_at TEXT NOT NULL,
+        used INTEGER DEFAULT 0,
+        used_by_hwid TEXT,
+        used_at TEXT
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS settings (
@@ -196,14 +197,13 @@ function ensureDeviceExists(hwid, extraData, callback) {
     const phone = extraData?.phone || '';
     const managerName = extraData?.manager_name || '';
     const email = extraData?.email || '';
-    const discountCode = extraData?.discount_code || null;
 
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (row) {
             if (extraData) {
                 db.run(
-                    `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, discount_code = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
-                    [shopName, managerName, email, phone, discountCode, now, now, hwid]
+                    `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
+                    [shopName, managerName, email, phone, now, now, hwid]
                 );
             } else {
                 db.run('UPDATE devices SET last_seen = ? WHERE hwid = ?', [now, hwid]);
@@ -213,9 +213,9 @@ function ensureDeviceExists(hwid, extraData, callback) {
             });
         } else {
             db.run(
-                `INSERT INTO devices (hwid, shop_name, manager_name, email, phone, discount_code, status, trial_start, trial_end, created_at, updated_at, last_seen)
-                 VALUES (?, ?, ?, ?, ?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
-                [hwid, shopName, managerName, email, phone, discountCode, now, now, now],
+                `INSERT INTO devices (hwid, shop_name, manager_name, email, phone, status, trial_start, trial_end, created_at, updated_at, last_seen)
+                 VALUES (?, ?, ?, ?, ?, 'trial', date('now'), date('now', '+14 days'), ?, ?, ?)`,
+                [hwid, shopName, managerName, email, phone, now, now, now],
                 function(err) {
                     if (err) return callback(err);
                     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, newRow) => {
@@ -227,7 +227,7 @@ function ensureDeviceExists(hwid, extraData, callback) {
     });
 }
 
-// دالة جلب أحدث إصدار من GitHub (معالجة محسنة)
+// دالة جلب أحدث إصدار من GitHub
 async function fetchLatestGitHubRelease() {
     try {
         const response = await fetch(GITHUB_API_URL, {
@@ -238,30 +238,12 @@ async function fetchLatestGitHubRelease() {
         });
         if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
         const release = await response.json();
-        
-        // البحث عن الملف المباشر في الأصول (assets)
-        let fileUrl = null;
-        if (release.assets && release.assets.length > 0) {
-            // نبحث عن أول ملف .exe أو .dmg أو .AppImage حسب الأولوية
-            const asset = release.assets.find(a => a.name && a.name.endsWith('.exe')) 
-                       || release.assets.find(a => a.name && a.name.endsWith('.dmg'))
-                       || release.assets.find(a => a.name && a.name.endsWith('.AppImage'))
-                       || release.assets[0];
-            if (asset && asset.browser_download_url) {
-                fileUrl = asset.browser_download_url;
-            }
-        }
-        // إذا لم نجد ملفًا في assets، نستخدم رابط الإصدار نفسه (صفحة الإصدار)
-        if (!fileUrl) {
-            fileUrl = release.html_url || null;
-        }
-
         return {
-            version: release.tag_name ? release.tag_name.replace('v', '') : '0.0.0',
-            releaseDate: release.published_at || new Date().toISOString(),
+            version: release.tag_name.replace('v', ''),
+            releaseDate: release.published_at,
             notes: release.body || '',
-            fileUrl: fileUrl,
-            fileSize: (release.assets && release.assets.length > 0) ? (release.assets[0].size || 0) : 0,
+            fileUrl: release.assets?.[0]?.browser_download_url || release.html_url,
+            fileSize: release.assets?.[0]?.size || 0,
             prerelease: release.prerelease || false
         };
     } catch (error) {
@@ -270,49 +252,112 @@ async function fetchLatestGitHubRelease() {
     }
 }
 
-// دالة مزامنة آخر إصدار إلى قاعدة البيانات مع إعادة المحاولة
-async function syncUpdateFromGitHub(retries = 3, delay = 2000) {
-    let lastError;
-    for (let i = 0; i < retries; i++) {
-        try {
-            const release = await fetchLatestGitHubRelease();
-            if (!release) {
-                throw new Error('تعذر جلب بيانات الإصدار من GitHub');
+// دالة مزامنة آخر إصدار إلى قاعدة البيانات
+async function syncUpdateFromGitHub() {
+    const release = await fetchLatestGitHubRelease();
+    if (!release) return { success: false, error: 'تعذر جلب بيانات الإصدار من GitHub' };
+
+    return new Promise((resolve, reject) => {
+        db.get('SELECT id FROM updates WHERE version = ?', [release.version], (err, existing) => {
+            if (err) return reject(err);
+            if (existing) {
+                db.run(
+                    `UPDATE updates SET release_date=?, notes=?, file_url=?, file_size=?, updated_at=CURRENT_TIMESTAMP WHERE version=?`,
+                    [release.releaseDate, release.notes, release.fileUrl, release.fileSize, release.version],
+                    (err) => {
+                        if (err) return reject(err);
+                        resolve({ success: true, version: release.version });
+                    }
+                );
+            } else {
+                db.run(
+                    `INSERT INTO updates (version, release_date, notes, file_url, file_size, mandatory, channel, min_version) VALUES (?,?,?,?,?,?,?,?)`,
+                    [release.version, release.releaseDate, release.notes, release.fileUrl, release.fileSize, 0, 'stable', '1.0.0'],
+                    function(err) {
+                        if (err) return reject(err);
+                        resolve({ success: true, version: release.version });
+                    }
+                );
+            }
+        });
+    });
+}
+
+// دالة توليد كود تفعيل معقد
+function generateComplexCode(prefix = 'MC', segmentLength = 4, segments = 4) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // تجنب الحروف المتشابهة
+    const parts = [];
+    for (let i = 0; i < segments; i++) {
+        let segment = '';
+        for (let j = 0; j < segmentLength; j++) {
+            segment += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        parts.push(segment);
+    }
+    return `${prefix}-${parts.join('-')}`;
+}
+
+// دالة تطبيق كود الخصم على الجهاز
+function applyDiscountToDevice(hwid, discountCode, callback) {
+    if (!discountCode) return callback(null, { applied: false });
+
+    db.get('SELECT * FROM discount_codes WHERE code = ?', [discountCode], (err, dc) => {
+        if (err) return callback(err);
+        if (!dc) return callback(null, { applied: false, error: 'كود غير صحيح' });
+        if (dc.expires_at && new Date(dc.expires_at) < new Date())
+            return callback(null, { applied: false, error: 'كود منتهي الصلاحية' });
+        if (dc.max_uses && dc.used_count >= dc.max_uses)
+            return callback(null, { applied: false, error: 'تم استنفاذ الاستخدام' });
+
+        // تحديث عدد الاستخدامات
+        db.run('UPDATE discount_codes SET used_count = used_count + 1 WHERE code = ?', [discountCode]);
+
+        db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, device) => {
+            if (err) return callback(err);
+            if (!device) return callback(null, { applied: false, error: 'جهاز غير موجود' });
+
+            const now = new Date().toISOString();
+            let updateFields = [];
+            let params = [];
+
+            switch (dc.type) {
+                case 'trial_extend':
+                    const days = dc.value || 14;
+                    const newTrialEnd = new Date();
+                    newTrialEnd.setDate(newTrialEnd.getDate() + days);
+                    const trialEndStr = newTrialEnd.toISOString().split('T')[0];
+                    updateFields.push('trial_end = ?', 'server_trial_end = ?', 'status = ?');
+                    params.push(trialEndStr, trialEndStr, 'trial');
+                    break;
+                case 'subscription_extend':
+                    const months = dc.value || 1;
+                    const newSubEnd = new Date(device.subscription_end || now);
+                    newSubEnd.setMonth(newSubEnd.getMonth() + months);
+                    const subEndStr = newSubEnd.toISOString().split('T')[0];
+                    updateFields.push('subscription_end = ?', 'server_subscription_end = ?', 'status = ?', 'activation_type = ?');
+                    params.push(subEndStr, subEndStr, 'activated', 'subscription');
+                    break;
+                case 'percent':
+                case 'fixed':
+                    // سيتم استخدامه في واجهة الدفع فقط، لا نغير شيء هنا
+                    break;
+                default:
+                    break;
             }
 
-            return new Promise((resolve, reject) => {
-                db.get('SELECT id FROM updates WHERE version = ?', [release.version], (err, existing) => {
-                    if (err) return reject(err);
-                    if (existing) {
-                        db.run(
-                            `UPDATE updates SET release_date=?, notes=?, file_url=?, file_size=?, updated_at=CURRENT_TIMESTAMP WHERE version=?`,
-                            [release.releaseDate, release.notes, release.fileUrl, release.fileSize, release.version],
-                            (err) => {
-                                if (err) return reject(err);
-                                resolve({ success: true, version: release.version, fileUrl: release.fileUrl });
-                            }
-                        );
-                    } else {
-                        db.run(
-                            `INSERT INTO updates (version, release_date, notes, file_url, file_size, mandatory, channel, min_version) VALUES (?,?,?,?,?,?,?,?)`,
-                            [release.version, release.releaseDate, release.notes, release.fileUrl, release.fileSize, 0, 'stable', '1.0.0'],
-                            function(err) {
-                                if (err) return reject(err);
-                                resolve({ success: true, version: release.version, fileUrl: release.fileUrl });
-                            }
-                        );
-                    }
+            if (updateFields.length > 0) {
+                updateFields.push('license_version = license_version + 1', 'updated_at = ?');
+                params.push(now);
+                params.push(hwid);
+                db.run(`UPDATE devices SET ${updateFields.join(', ')} WHERE hwid = ?`, params, (err) => {
+                    if (err) return callback(err);
+                    callback(null, { applied: true, type: dc.type, value: dc.value });
                 });
-            });
-        } catch (error) {
-            console.error(`محاولة ${i + 1} فشلت:`, error.message);
-            lastError = error;
-            if (i < retries - 1) {
-                await new Promise(res => setTimeout(res, delay));
+            } else {
+                callback(null, { applied: true, type: dc.type, value: dc.value });
             }
-        }
-    }
-    throw lastError || new Error('فشلت كل المحاولات');
+        });
+    });
 }
 
 // ====================== API Routes ======================
@@ -342,57 +387,83 @@ app.post('/api/devices/register', (req, res) => {
     db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (row) {
+            // الجهاز موجود، تحديث البيانات
             db.run(
-                `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, discount_code = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
-                [shop_name || row.shop_name, manager_name || row.manager_name, email || row.email, phone || row.phone, discount_code || row.discount_code, now, now, hwid]
+                `UPDATE devices SET shop_name = ?, manager_name = ?, email = ?, phone = ?, last_seen = ?, updated_at = ? WHERE hwid = ?`,
+                [shop_name || row.shop_name, manager_name || row.manager_name, email || row.email, phone || row.phone, now, now, hwid],
+                function(err) {
+                    if (err) return res.status(500).json({ error: err.message });
+                    
+                    // تطبيق كود الخصم إذا تم إرساله
+                    if (discount_code) {
+                        applyDiscountToDevice(hwid, discount_code, (err, result) => {
+                            if (err) console.error(err);
+                        });
+                    }
+
+                    db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, updatedRow) => {
+                        if (err2) return res.status(500).json({ error: err2.message });
+                        const payload = {
+                            status: updatedRow.status,
+                            trial_end: updatedRow.server_trial_end || updatedRow.trial_end,
+                            subscription_end: updatedRow.server_subscription_end || updatedRow.subscription_end,
+                            license_version: updatedRow.license_version,
+                            hwid
+                        };
+                        const signature = signPayload(payload);
+                        return res.json({ success: true, alreadyRegistered: true, data: { ...payload, signature } });
+                    });
+                }
             );
-            db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err2, updatedRow) => {
-                const payload = {
-                    status: updatedRow.status,
-                    trial_end: updatedRow.server_trial_end || updatedRow.trial_end,
-                    subscription_end: updatedRow.server_subscription_end || updatedRow.subscription_end,
-                    license_version: updatedRow.license_version,
-                    hwid
-                };
-                const signature = signPayload(payload);
-                return res.json({ success: true, alreadyRegistered: true, data: { ...payload, signature } });
-            });
             return;
         }
 
+        // جهاز جديد
         let status = 'trial';
         let trial_start = new Date().toISOString().split('T')[0];
-        db.get('SELECT value FROM settings WHERE key = ?', ['trial_days'], (err, row) => {
-            const trialDays = parseInt(row?.value || '14');
+        db.get('SELECT value FROM settings WHERE key = ?', ['trial_days'], (err, settingRow) => {
+            const trialDays = parseInt(settingRow?.value || '14');
             const end = new Date();
             end.setDate(end.getDate() + trialDays);
             const trial_end = end.toISOString().split('T')[0];
             const secret = crypto.randomBytes(16).toString('hex');
 
             db.run(
-                `INSERT INTO devices (hwid, device_secret, shop_name, manager_name, email, phone, discount_code, status, activation_type, trial_start, trial_end, server_trial_end, created_at, updated_at, last_seen)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-                [hwid, secret, shop_name, manager_name, email, phone, discount_code || null, status, activation_type || null, trial_start, trial_end, trial_end, now, now, now],
+                `INSERT INTO devices (hwid, device_secret, shop_name, manager_name, email, phone, status, activation_type, trial_start, trial_end, server_trial_end, created_at, updated_at, last_seen)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                [hwid, secret, shop_name, manager_name, email, phone, status, activation_type || null, trial_start, trial_end, trial_end, now, now, now],
                 function (err) {
                     if (err) return res.status(500).json({ error: err.message });
 
+                    // تطبيق كود الخصم إذا تم إرساله
                     if (discount_code) {
-                        db.get('SELECT * FROM discount_codes WHERE code = ?', [discount_code], (err, dc) => {
-                            if (dc && dc.expires_at && new Date(dc.expires_at) > new Date() && dc.used_count < dc.max_uses) {
-                                db.run('UPDATE discount_codes SET used_count = used_count + 1 WHERE code = ?', [discount_code]);
-                            }
+                        applyDiscountToDevice(hwid, discount_code, (err, result) => {
+                            if (err) console.error(err);
+                            // بعد تطبيق الكود، نعيد قراءة الجهاز
+                            db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, updatedDevice) => {
+                                const payload = {
+                                    status: updatedDevice.status,
+                                    trial_end: updatedDevice.server_trial_end || updatedDevice.trial_end,
+                                    subscription_end: updatedDevice.server_subscription_end || updatedDevice.subscription_end,
+                                    license_version: updatedDevice.license_version,
+                                    hwid
+                                };
+                                const signature = signPayload(payload);
+                                res.json({ success: true, data: { ...payload, signature } });
+                            });
+                            return;
                         });
+                    } else {
+                        const payload = {
+                            status,
+                            trial_end,
+                            subscription_end: null,
+                            license_version: 1,
+                            hwid
+                        };
+                        const signature = signPayload(payload);
+                        res.json({ success: true, data: { ...payload, signature } });
                     }
-
-                    const payload = {
-                        status,
-                        trial_end,
-                        subscription_end: null,
-                        license_version: 1,
-                        hwid
-                    };
-                    const signature = signPayload(payload);
-                    res.json({ success: true, data: { ...payload, signature } });
                 }
             );
         });
@@ -448,7 +519,7 @@ app.post('/api/devices/sync', (req, res) => {
     });
 });
 
-// تفعيل / حظر / تعديل بيانات من لوحة الإدارة
+// تفعيل / حظر / تعديل من لوحة الإدارة
 app.put('/api/devices/:hwid', (req, res) => {
     const { hwid } = req.params;
     const { status, activation_type, subscription_months, shop_name, phone, discount_code } = req.body;
@@ -456,39 +527,39 @@ app.put('/api/devices/:hwid', (req, res) => {
         if (!row) return res.status(404).json({ error: 'Not found' });
         const newVersion = row.license_version + 1;
         const now = new Date().toISOString();
-        let updates = {};
+        let updates = { status, license_version: newVersion, updated_at: now };
         
-        // تحديث بيانات المتجر
         if (shop_name !== undefined) updates.shop_name = shop_name;
         if (phone !== undefined) updates.phone = phone;
-        if (discount_code !== undefined) updates.discount_code = discount_code;
-        
-        if (status) {
-            updates.status = status;
-            updates.license_version = newVersion;
-            updates.updated_at = now;
-            if (status === 'activated') {
-                updates.activated_at = now;
-                if (activation_type === 'subscription' && subscription_months) {
-                    const end = new Date();
-                    end.setMonth(end.getMonth() + subscription_months);
-                    updates.subscription_end = end.toISOString().split('T')[0];
-                    updates.server_subscription_end = updates.subscription_end;
-                } else if (activation_type === 'permanent') {
-                    updates.subscription_end = null;
-                    updates.server_subscription_end = null;
-                }
-            } else if (status === 'blocked') {
-                updates.blocked_at = now;
+
+        if (status === 'activated') {
+            updates.activated_at = now;
+            if (activation_type === 'subscription' && subscription_months) {
+                const end = new Date();
+                end.setMonth(end.getMonth() + subscription_months);
+                updates.subscription_end = end.toISOString().split('T')[0];
+                updates.server_subscription_end = updates.subscription_end;
+            } else if (activation_type === 'permanent') {
+                updates.subscription_end = null;
+                updates.server_subscription_end = null;
             }
-        } else {
-            // إذا لم يتم تغيير الحالة، نضبط updated_at فقط
-            updates.updated_at = now;
+        } else if (status === 'blocked') {
+            updates.blocked_at = now;
         }
 
         const sql = `UPDATE devices SET ${Object.keys(updates).map(k => `${k}=?`).join(', ')} WHERE hwid=?`;
-        db.run(sql, [...Object.values(updates), hwid], (err) => {
+        const params = [...Object.values(updates), hwid];
+
+        db.run(sql, params, (err) => {
             if (err) return res.status(500).json({ error: err.message });
+            
+            // تطبيق كود الخصم إذا تم إرساله
+            if (discount_code) {
+                applyDiscountToDevice(hwid, discount_code, (err, result) => {
+                    if (err) console.error(err);
+                });
+            }
+            
             res.json({ success: true });
         });
     });
@@ -597,6 +668,70 @@ app.delete('/api/discount-codes/:code', (req, res) => {
     });
 });
 
+// ================== أكواد التفعيل الدائم (نظام جديد) ==================
+app.post('/api/activation-codes/generate', (req, res) => {
+    const { count } = req.body;
+    const num = parseInt(count) || 1;
+    const codes = [];
+    const now = new Date().toISOString();
+
+    for (let i = 0; i < num; i++) {
+        const code = generateComplexCode();
+        codes.push(code);
+        db.run('INSERT INTO activation_codes (code, created_at) VALUES (?, ?)', [code, now]);
+    }
+
+    res.json({ success: true, codes });
+});
+
+app.post('/api/activation-codes/redeem', (req, res) => {
+    const { hwid, code } = req.body;
+    if (!hwid || !code) return res.status(400).json({ error: 'HWID and code required' });
+
+    db.get('SELECT * FROM activation_codes WHERE code = ?', [code], (err, activationCode) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!activationCode) return res.json({ success: false, error: 'كود غير صحيح' });
+        if (activationCode.used) return res.json({ success: false, error: 'الكود مستخدم مسبقاً' });
+
+        db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, device) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!device) return res.json({ success: false, error: 'جهاز غير معروف' });
+
+            const now = new Date().toISOString();
+            db.run(
+                `UPDATE devices SET status = 'activated', activation_type = 'permanent', subscription_end = NULL, server_subscription_end = NULL, activated_at = ?, license_version = license_version + 1, updated_at = ? WHERE hwid = ?`,
+                [now, now, hwid],
+                (err) => {
+                    if (err) return res.status(500).json({ error: err.message });
+                    
+                    // تعليم الكود كمستخدم وربطه بالجهاز
+                    db.run(
+                        `UPDATE activation_codes SET used = 1, used_by_hwid = ?, used_at = ? WHERE code = ?`,
+                        [hwid, now, code]
+                    );
+
+                    res.json({ success: true, message: 'تم التفعيل الدائم بنجاح' });
+                }
+            );
+        });
+    });
+});
+
+app.get('/api/activation-codes', (req, res) => {
+    db.all('SELECT * FROM activation_codes ORDER BY created_at DESC', (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, data: rows });
+    });
+});
+
+app.delete('/api/activation-codes/:id', (req, res) => {
+    const { id } = req.params;
+    db.run('DELETE FROM activation_codes WHERE id = ? AND used = 0', [id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
 // ================== نظام العروض الترويجية ==================
 app.get('/api/promotions/active', (req, res) => {
     const now = new Date().toISOString();
@@ -646,9 +781,9 @@ app.delete('/api/promotions/:id', (req, res) => {
     });
 });
 
-// ================== نظام التحديثات (من GitHub فقط) ==================
+// ================== نظام التحديثات (جديد - من GitHub) ==================
 
-// مزامنة التحديثات من GitHub (للاستخدام الإداري) - مع إعادة المحاولة
+// مزامنة التحديثات من GitHub (للاستخدام الإداري)
 app.post('/api/updates/sync', async (req, res) => {
     try {
         const result = await syncUpdateFromGitHub();
@@ -680,11 +815,26 @@ app.get('/api/updates/latest', (req, res) => {
     });
 });
 
-// جلب جميع التحديثات
+// إضافة تحديث يدوي (من لوحة التحكم)
+app.post('/api/updates', (req, res) => {
+    const { version, release_date, notes, file_url, file_size, mandatory, channel, min_version } = req.body;
+    if (!version || !file_url) return res.status(400).json({ error: 'Version and file_url are required' });
+
+    db.run(
+        `INSERT INTO updates (version, release_date, notes, file_url, file_size, mandatory, channel, min_version) VALUES (?,?,?,?,?,?,?,?)`,
+        [version, release_date || new Date().toISOString(), notes, file_url, file_size || 0, mandatory ? 1 : 0, channel || 'stable', min_version || '1.0.0'],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, id: this.lastID });
+        }
+    );
+});
+
+// الحصول على جميع التحديثات
 app.get('/api/updates', (req, res) => {
     db.all('SELECT * FROM updates ORDER BY release_date DESC', (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, data: rows || [] });
+        res.json({ success: true, data: rows });
     });
 });
 
@@ -697,58 +847,36 @@ app.delete('/api/updates/:version', (req, res) => {
     });
 });
 
-// ================== إدارة قاعدة البيانات ==================
-
-// تنزيل قاعدة البيانات
+// ================== قاعدة البيانات ==================
+// تحميل قاعدة البيانات
 app.get('/api/database/download', (req, res) => {
-    try {
-        if (!fs.existsSync(dbPath)) {
-            return res.status(404).json({ error: 'قاعدة البيانات غير موجودة' });
-        }
+    if (fs.existsSync(dbPath)) {
         res.download(dbPath, 'mcpos.db');
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+    } else {
+        res.status(404).json({ error: 'قاعدة البيانات غير موجودة' });
     }
 });
 
-// رفع واستبدال قاعدة البيانات
-app.post('/api/database/upload', uploadDb.single('database'), (req, res) => {
+// رفع قاعدة البيانات (استبدال)
+app.post('/api/database/upload', upload.single('database'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'لم يتم إرسال ملف' });
+
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'لم يتم إرفاق ملف' });
-        }
+        // نسخ احتياطي للقاعدة الحالية
+        const backupPath = dbPath + '.backup_' + Date.now();
+        fs.copyFileSync(dbPath, backupPath);
 
-        const tempPath = req.file.path;
-        
-        // إغلاق قاعدة البيانات الحالية
-        db.close((err) => {
-            if (err) {
-                console.error('خطأ في إغلاق قاعدة البيانات:', err);
-                return res.status(500).json({ error: 'فشل إغلاق قاعدة البيانات الحالية' });
-            }
+        // استبدال القاعدة
+        fs.writeFileSync(dbPath, req.file.buffer);
 
-            try {
-                // نسخ الملف المرفوع فوق قاعدة البيانات الأصلية
-                fs.copyFileSync(tempPath, dbPath);
-                // حذف الملف المؤقت
-                fs.unlinkSync(tempPath);
+        // إعادة تحميل القاعدة
+        db.close();
+        const newDb = new sqlite3.Database(dbPath);
+        newDb.run('PRAGMA journal_mode=WAL;');
 
-                // إعادة فتح قاعدة البيانات
-                db = new sqlite3.Database(dbPath);
-                db.run('PRAGMA journal_mode=WAL;');
-                
-                console.log('✅ تم استبدال قاعدة البيانات بنجاح');
-                res.json({ success: true, message: 'تم استيراد قاعدة البيانات بنجاح، يُنصح بإعادة تشغيل الخادم' });
-            } catch (copyError) {
-                console.error('خطأ في نسخ قاعدة البيانات:', copyError);
-                // محاولة إعادة فتح القديمة
-                db = new sqlite3.Database(dbPath);
-                db.run('PRAGMA journal_mode=WAL;');
-                return res.status(500).json({ error: 'فشل في استبدال قاعدة البيانات' });
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.json({ success: true, message: 'تم استبدال قاعدة البيانات بنجاح' });
+    } catch (e) {
+        res.status(500).json({ error: 'فشل استبدال قاعدة البيانات: ' + e.message });
     }
 });
 
@@ -775,21 +903,6 @@ setInterval(() => {
     });
     db.run(`UPDATE promotions SET is_active = 0 WHERE end_date < ? AND is_active = 1`, [now.toISOString()]);
 }, 60 * 1000);
-
-// مزامنة التحديثات من GitHub دورياً كل 30 دقيقة
-setInterval(async () => {
-    try {
-        await syncUpdateFromGitHub();
-        console.log('🔄 تمت مزامنة التحديثات من GitHub تلقائياً');
-    } catch (e) {
-        console.error('❌ فشلت المزامنة الدورية للتحديثات:', e.message);
-    }
-}, 30 * 60 * 1000);
-
-// مزامنة أولى عند التشغيل مع تأخير بسيط
-setTimeout(() => {
-    syncUpdateFromGitHub().then(r => console.log('✅ تمت مزامنة التحديثات الأولية من GitHub', r.version)).catch(e => console.error('❌ فشلت المزامنة الأولية:', e.message));
-}, 5000);
 
 // ---- تشغيل الخادم ----
 app.listen(PORT, () => {

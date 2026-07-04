@@ -10,9 +10,9 @@
         :root {
             --sidebar-width: 250px;
             --sidebar-collapsed: 70px;
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --primary-light: rgba(79, 70, 229, 0.08);
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-light: rgba(99, 102, 241, 0.1);
             --success: #10b981;
             --success-light: rgba(16, 185, 129, 0.1);
             --warning: #f59e0b;
@@ -23,20 +23,18 @@
             --dark: #1e293b;
             --darker: #0f172a;
             --light: #f8fafc;
-            --border: #e5e7eb;
-            --bg: #f3f4f6;
+            --border: #e2e8f0;
+            --bg: #f1f5f9;
             --card-bg: #ffffff;
-            --text: #111827;
-            --text-secondary: #6b7280;
-            --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-            --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
-            --radius: 10px;
-            --radius-sm: 6px;
-            --transition: 0.2s ease;
-            --font-xs: 0.7rem;
-            --font-sm: 0.8rem;
-            --font-md: 0.875rem;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.07);
+            --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.1);
+            --shadow-lg: 0 20px 50px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -49,7 +47,6 @@
             color: var(--text);
             display: flex;
             margin: 0;
-            font-size: 14px;
         }
 
         /* ========== الشريط الجانبي ========== */
@@ -142,31 +139,28 @@
         .main-content {
             margin-right: var(--sidebar-width);
             flex: 1;
-            padding: 16px 20px;
+            padding: 24px 28px;
             min-height: 100vh;
             transition: margin var(--transition);
         }
 
         /* ========== الهيدر العلوي ========== */
-        .navbar-custom {
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            padding: 0 16px;
-            height: 56px;
+        .top-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: var(--shadow-xs);
-            border: 1px solid var(--border);
-            margin-bottom: 14px;
+            margin-bottom: 24px;
         }
-        .navbar-custom h4 {
-            font-size: 1rem;
+        .top-bar h1 {
+            font-size: 1.5rem;
             font-weight: 700;
             margin: 0;
             color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .navbar-custom .actions {
+        .top-bar .actions {
             display: flex;
             gap: 10px;
         }
@@ -174,48 +168,74 @@
         /* ========== بطاقات الإحصائيات ========== */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-bottom: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
-        .stats-card {
+        .stat-card {
             background: var(--card-bg);
             border-radius: var(--radius);
-            padding: 14px 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
             box-shadow: var(--shadow-xs);
+            transition: all var(--transition);
             display: flex;
             align-items: center;
-            gap: 12px;
-            border: 1px solid var(--border);
-            transition: box-shadow var(--transition);
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
         }
-        .stats-card:hover {
-            box-shadow: var(--shadow-sm);
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            opacity: 0.06;
+            transition: all var(--transition);
         }
-        .stats-card .icon-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        .stat-card:hover::after {
+            transform: scale(1.3);
+        }
+        .stat-card.primary::after { background: var(--primary); }
+        .stat-card.success::after { background: var(--success); }
+        .stat-card.warning::after { background: var(--warning); }
+        .stat-card.danger::after { background: var(--danger); }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 1.4rem;
+            color: #fff;
             flex-shrink: 0;
         }
-        .icon-circle.purple { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
-        .icon-circle.green { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-        .icon-circle.orange { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
-        .icon-circle.red { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .stat-card.primary .stat-icon { background: var(--primary); }
+        .stat-card.success .stat-icon { background: var(--success); }
+        .stat-card.warning .stat-icon { background: var(--warning); }
+        .stat-card.danger .stat-icon { background: var(--danger); }
 
-        .stats-card .number {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--text);
-            line-height: 1.2;
+        .stat-info {
+            flex: 1;
         }
-        .stats-card .label {
-            font-size: var(--font-xs);
+        .stat-value {
+            font-size: 1.7rem;
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--text);
+        }
+        .stat-label {
+            font-size: 0.8rem;
             color: var(--text-secondary);
             margin-top: 2px;
         }
@@ -224,48 +244,52 @@
         .section-card {
             background: var(--card-bg);
             border-radius: var(--radius);
-            padding: 14px 16px;
-            margin-bottom: 14px;
+            padding: 24px;
+            margin-bottom: 20px;
             border: 1px solid var(--border);
             box-shadow: var(--shadow-xs);
+            transition: box-shadow var(--transition);
+        }
+        .section-card:hover {
+            box-shadow: var(--shadow-sm);
         }
         .section-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 12px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
             color: var(--text);
-            padding-bottom: 10px;
+            padding-bottom: 14px;
             border-bottom: 1px solid var(--border);
         }
         .section-title i {
             color: var(--primary);
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
 
         /* ========== الجداول ========== */
         .table-container {
             border-radius: var(--radius-sm);
-            overflow: auto;
+            overflow: hidden;
             border: 1px solid var(--border);
         }
         .table {
             margin-bottom: 0;
-            font-size: var(--font-sm);
+            font-size: 0.85rem;
         }
         .table thead th {
             background: #f8fafc;
             border-bottom: 2px solid var(--border);
             font-weight: 600;
             color: var(--text-secondary);
-            padding: 10px 8px;
+            padding: 12px;
             white-space: nowrap;
-            font-size: var(--font-xs);
+            font-size: 0.8rem;
         }
         .table tbody td {
-            padding: 8px;
+            padding: 10px 12px;
             vertical-align: middle;
             border-bottom: 1px solid var(--border);
         }
@@ -280,8 +304,8 @@
         .btn {
             border-radius: var(--radius-sm);
             font-weight: 500;
-            font-size: var(--font-sm);
-            padding: 6px 12px;
+            font-size: 0.8rem;
+            padding: 7px 14px;
             transition: all 0.15s;
             border: none;
             cursor: pointer;
@@ -292,6 +316,7 @@
         }
         .btn-primary:hover {
             background: var(--primary-hover);
+            transform: translateY(-1px);
         }
         .btn-success {
             background: var(--success);
@@ -317,12 +342,12 @@
             background: var(--primary-light);
         }
         .btn-sm {
-            padding: 4px 8px;
-            font-size: var(--font-xs);
+            padding: 4px 10px;
+            font-size: 0.75rem;
         }
         .btn-icon {
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -330,7 +355,7 @@
             border: none;
             cursor: pointer;
             transition: all 0.15s;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             background: transparent;
             color: var(--text-secondary);
         }
@@ -342,31 +367,31 @@
         /* ========== بطاقات الأسعار ========== */
         .prices-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            margin-bottom: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
         }
         .price-card {
             background: #f8fafc;
             border: 2px solid var(--border);
             border-radius: var(--radius);
-            padding: 14px;
+            padding: 18px 14px;
             text-align: center;
             transition: all var(--transition);
         }
         .price-card:hover {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-light);
+            box-shadow: 0 0 0 4px var(--primary-light);
         }
         .price-card h5 {
-            font-size: var(--font-sm);
+            font-size: 0.85rem;
             color: var(--text-secondary);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .price-card input {
             border: none;
             background: transparent;
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             font-weight: 700;
             color: var(--text);
             width: 100%;
@@ -374,19 +399,18 @@
             outline: none;
         }
         .price-card .currency {
-            font-size: var(--font-xs);
+            font-size: 0.75rem;
             color: #94a3b8;
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         /* ========== نماذج الإدخال ========== */
         .form-control, .form-select {
             border-radius: var(--radius-sm);
             border: 1px solid var(--border);
-            padding: 6px 10px;
-            font-size: var(--font-sm);
+            padding: 8px 12px;
+            font-size: 0.85rem;
             transition: border-color var(--transition), box-shadow var(--transition);
-            height: auto;
         }
         .form-control:focus, .form-select:focus {
             border-color: var(--primary);
@@ -394,39 +418,50 @@
             outline: none;
         }
         .form-label {
-            font-weight: 500;
-            font-size: var(--font-xs);
+            font-weight: 600;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            margin-bottom: 3px;
+            margin-bottom: 4px;
         }
 
         /* ========== شارات الحالة ========== */
         .badge {
-            font-size: var(--font-xs);
-            padding: 4px 8px;
-            border-radius: 4px;
+            font-size: 0.75rem;
+            padding: 5px 10px;
+            border-radius: 6px;
             font-weight: 500;
         }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .status-badge .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+        }
 
-        /* ========== تنبيهات توست ========== */
+        /* ========== توست الإشعارات ========== */
         .toast-container {
             position: fixed;
-            top: 16px;
-            left: 16px;
+            top: 20px;
+            left: 20px;
             z-index: 9999;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            width: 300px;
         }
         .custom-toast {
             background: var(--card-bg);
             border-radius: var(--radius);
-            padding: 12px 16px;
-            box-shadow: var(--shadow-md);
+            padding: 14px 18px;
+            box-shadow: var(--shadow-lg);
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 300px;
             animation: slideIn 0.3s ease;
             border-right: 4px solid var(--primary);
         }
@@ -437,21 +472,6 @@
         @keyframes slideIn {
             from { transform: translateX(-100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* ========== مودال تعديل الجهاز ========== */
-        .modal-content {
-            border-radius: var(--radius);
-            border: none;
-            box-shadow: var(--shadow-md);
-        }
-        .modal-header {
-            border-bottom: 1px solid var(--border);
-            padding: 14px 16px;
-        }
-        .modal-footer {
-            border-top: 1px solid var(--border);
-            padding: 14px 16px;
         }
 
         /* ========== استجابة الجوال ========== */
@@ -466,20 +486,26 @@
             }
             .main-content {
                 margin-right: var(--sidebar-collapsed);
-                padding: 12px;
+                padding: 16px;
             }
             .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             }
+        }
+        .modal-backdrop {
+            z-index: 1040;
+        }
+        .modal {
+            z-index: 1050;
         }
     </style>
 </head>
 <body>
 
-    <!-- توست الإشعارات -->
+    <!-- ========== توست الإشعارات ========== -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- الشريط الجانبي -->
+    <!-- ========== الشريط الجانبي ========== -->
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="brand">
@@ -505,6 +531,10 @@
                 <i class="fas fa-tags"></i>
                 <span>أكواد الخصم</span>
             </button>
+            <button class="nav-item" onclick="scrollToSection('activationCodesSection')">
+                <i class="fas fa-key"></i>
+                <span>أكواد التفعيل</span>
+            </button>
             <button class="nav-item" onclick="scrollToSection('promoSection')">
                 <i class="fas fa-gift"></i>
                 <span>العروض</span>
@@ -523,50 +553,53 @@
         </div>
     </aside>
 
-    <!-- المحتوى الرئيسي -->
+    <!-- ========== المحتوى الرئيسي ========== -->
     <main class="main-content">
-        <div class="navbar-custom">
-            <h4><i class="fas fa-crown" style="color: var(--primary); margin-left: 8px;"></i>لوحة تحكم التراخيص</h4>
+        <div class="top-bar">
+            <h1>
+                <i class="fas fa-crown" style="color: var(--primary)"></i>
+                لوحة تحكم التراخيص
+            </h1>
             <div class="actions">
                 <button class="btn btn-primary" onclick="loadAll()">
-                    <i class="fas fa-sync-alt me-1"></i>تحديث الكل
+                    <i class="fas fa-sync-alt me-2"></i>تحديث الكل
                 </button>
             </div>
         </div>
 
-        <!-- إحصائيات سريعة -->
+        <!-- ========== إحصائيات سريعة ========== -->
         <div class="stats-grid" id="statsRow">
-            <div class="stats-card">
-                <div class="icon-circle purple"><i class="fas fa-laptop"></i></div>
-                <div>
-                    <div class="number" id="totalDevices">0</div>
-                    <div class="label">إجمالي الأجهزة</div>
+            <div class="stat-card primary">
+                <div class="stat-icon"><i class="fas fa-laptop"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="totalDevices">0</div>
+                    <div class="stat-label">إجمالي الأجهزة</div>
                 </div>
             </div>
-            <div class="stats-card">
-                <div class="icon-circle green"><i class="fas fa-check-circle"></i></div>
-                <div>
-                    <div class="number" id="activeDevices">0</div>
-                    <div class="label">المفعلة</div>
+            <div class="stat-card success">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="activeDevices">0</div>
+                    <div class="stat-label">المفعلة</div>
                 </div>
             </div>
-            <div class="stats-card">
-                <div class="icon-circle orange"><i class="fas fa-clock"></i></div>
-                <div>
-                    <div class="number" id="trialDevices">0</div>
-                    <div class="label">تجريبي</div>
+            <div class="stat-card warning">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="trialDevices">0</div>
+                    <div class="stat-label">تجريبي</div>
                 </div>
             </div>
-            <div class="stats-card">
-                <div class="icon-circle red"><i class="fas fa-ban"></i></div>
-                <div>
-                    <div class="number" id="blockedDevices">0</div>
-                    <div class="label">محظور / منتهي</div>
+            <div class="stat-card danger">
+                <div class="stat-icon"><i class="fas fa-ban"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="blockedDevices">0</div>
+                    <div class="stat-label">محظور / منتهي</div>
                 </div>
             </div>
         </div>
 
-        <!-- إدارة الأسعار -->
+        <!-- ========== قسم إدارة الأسعار ========== -->
         <div class="section-card" id="pricesSection">
             <div class="section-title">
                 <i class="fas fa-money-bill-wave"></i> إدارة أسعار الاشتراكات
@@ -574,61 +607,93 @@
             <div class="prices-grid">
                 <div class="price-card">
                     <h5><i class="far fa-calendar-alt me-1"></i> ربع سنوي</h5>
-                    <input type="number" id="price_quarterly" class="price-input" placeholder="0.00" step="0.01" onchange="autoSavePrices()">
+                    <input type="number" id="price_quarterly" class="price-input" placeholder="0.00" step="0.01" onchange="scheduleSavePrices()">
                     <div class="currency">د.ج</div>
                 </div>
                 <div class="price-card">
                     <h5><i class="far fa-calendar-alt me-1"></i> نصف سنوي</h5>
-                    <input type="number" id="price_semiannual" class="price-input" placeholder="0.00" step="0.01" onchange="autoSavePrices()">
+                    <input type="number" id="price_semiannual" class="price-input" placeholder="0.00" step="0.01" onchange="scheduleSavePrices()">
                     <div class="currency">د.ج</div>
                 </div>
                 <div class="price-card">
                     <h5><i class="far fa-calendar-alt me-1"></i> سنوي</h5>
-                    <input type="number" id="price_annual" class="price-input" placeholder="0.00" step="0.01" onchange="autoSavePrices()">
+                    <input type="number" id="price_annual" class="price-input" placeholder="0.00" step="0.01" onchange="scheduleSavePrices()">
                     <div class="currency">د.ج</div>
                 </div>
                 <div class="price-card">
                     <h5><i class="fas fa-infinity me-1"></i> دائم</h5>
-                    <input type="number" id="price_permanent" class="price-input" placeholder="0.00" step="0.01" onchange="autoSavePrices()">
+                    <input type="number" id="price_permanent" class="price-input" placeholder="0.00" step="0.01" onchange="scheduleSavePrices()">
                     <div class="currency">د.ج</div>
                 </div>
             </div>
-            <small class="text-muted">يتم الحفظ تلقائياً عند تعديل أي قيمة.</small>
+            <small class="text-muted d-block mt-2">يتم حفظ الأسعار تلقائياً بعد التعديل.</small>
         </div>
 
-        <!-- الأجهزة -->
+        <!-- ========== قسم الأجهزة ========== -->
         <div class="section-card" id="devicesSection">
             <div class="section-title">
                 <i class="fas fa-laptop"></i> الأجهزة المسجلة
                 <button class="btn btn-primary btn-sm me-auto" onclick="loadDevices()"><i class="fas fa-sync-alt me-1"></i>تحديث</button>
             </div>
             <div class="table-container">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>اسم المتجر</th>
-                            <th>الهاتف</th>
-                            <th>HWID</th>
-                            <th>الحالة</th>
-                            <th>كود ترويجي</th>
-                            <th>تاريخ الانتهاء</th>
-                            <th>آخر ظهور</th>
-                            <th>إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="devicesTableBody">
-                        <tr><td colspan="8" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>اسم المتجر</th>
+                                <th>الهاتف</th>
+                                <th>HWID</th>
+                                <th>الحالة</th>
+                                <th>تاريخ الانتهاء</th>
+                                <th>آخر ظهور</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesTableBody">
+                            <tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- أكواد الخصم -->
+        <!-- ========== نافذة تعديل الجهاز المنبثقة ========== -->
+        <div class="modal fade" id="editDeviceModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">تعديل بيانات الجهاز</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="editDeviceHwid">
+                        <div class="mb-3">
+                            <label class="form-label">اسم المتجر</label>
+                            <input type="text" id="editShopName" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="text" id="editPhone" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">الكود الترويجي</label>
+                            <input type="text" id="editDiscountCode" class="form-control" placeholder="اختياري">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" class="btn btn-primary" onclick="saveDeviceEdit()">حفظ التغييرات</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== قسم أكواد الخصم ========== -->
         <div class="section-card" id="discountSection">
             <div class="section-title">
                 <i class="fas fa-tags"></i> إدارة أكواد الخصم
             </div>
-            <div class="row g-2 mb-3 p-3" style="background: #f8fafc; border-radius: var(--radius);">
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: var(--radius);">
                 <div class="col-md-2">
                     <label class="form-label">الكود</label>
                     <input type="text" id="discountCode" class="form-control" placeholder="مثال: SAVE20">
@@ -640,6 +705,7 @@
                         <option value="fixed">مبلغ ثابت</option>
                         <option value="trial_extend">تمديد التجربة</option>
                         <option value="subscription_extend">تمديد الاشتراك</option>
+                        <option value="referral">إحالة</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -661,31 +727,73 @@
                 </div>
             </div>
             <div class="table-container">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>الكود</th>
-                            <th>النوع</th>
-                            <th>القيمة</th>
-                            <th>تاريخ الانتهاء</th>
-                            <th>الاستخدامات</th>
-                            <th>المستخدم</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="discountCodesTableBody">
-                        <tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>الكود</th>
+                                <th>النوع</th>
+                                <th>القيمة</th>
+                                <th>تاريخ الانتهاء</th>
+                                <th>الاستخدامات</th>
+                                <th>المستخدم</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="discountCodesTableBody">
+                            <tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- العروض الترويجية -->
+        <!-- ========== قسم أكواد التفعيل ========== -->
+        <div class="section-card" id="activationCodesSection">
+            <div class="section-title">
+                <i class="fas fa-key"></i> إدارة أكواد التفعيل الدائم
+            </div>
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: var(--radius);">
+                <div class="col-md-2">
+                    <label class="form-label">عدد الأكواد</label>
+                    <input type="number" id="activationCodesCount" class="form-control" value="5" min="1" max="100">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-success w-100" onclick="generateActivationCodes()">
+                        <i class="fas fa-plus me-1"></i> توليد أكواد
+                    </button>
+                </div>
+                <div class="col-md-8 d-flex align-items-end">
+                    <small class="text-muted">الأكواد المُنشأة ستظهر هنا مباشرة. انسخها فوراً لأنها لن تظهر مرة أخرى.</small>
+                </div>
+            </div>
+            <div id="generatedCodesDisplay" class="alert alert-success d-none mb-3" style="word-break: break-all;"></div>
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>الكود</th>
+                                <th>تاريخ الإنشاء</th>
+                                <th>مستخدم؟</th>
+                                <th>الجهاز</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="activationCodesTableBody">
+                            <tr><td colspan="5" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== قسم العروض الترويجية ========== -->
         <div class="section-card" id="promoSection">
             <div class="section-title">
                 <i class="fas fa-gift"></i> إدارة العروض الترويجية
             </div>
-            <div class="row g-2 mb-3 p-3" style="background: #f8fafc; border-radius: var(--radius);">
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: var(--radius);">
                 <div class="col-md-2">
                     <label class="form-label">عنوان العرض *</label>
                     <input type="text" id="promoTitle" class="form-control" placeholder="عرض الصيف">
@@ -713,106 +821,99 @@
                     <label class="form-label">تاريخ النهاية</label>
                     <input type="date" id="promoEndDate" class="form-control">
                 </div>
-                <div class="col-12 mt-2">
+                <div class="col-12">
                     <button class="btn btn-success" onclick="addPromotion()">
                         <i class="fas fa-plus me-1"></i> إضافة العرض
                     </button>
                 </div>
             </div>
             <div class="table-container">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>العنوان</th>
-                            <th>الوصف</th>
-                            <th>نوع الخصم</th>
-                            <th>القيمة</th>
-                            <th>تاريخ البداية</th>
-                            <th>تاريخ النهاية</th>
-                            <th>الحالة</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="promotionsTableBody">
-                        <tr><td colspan="8" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>العنوان</th>
+                                <th>الوصف</th>
+                                <th>نوع الخصم</th>
+                                <th>القيمة</th>
+                                <th>تاريخ البداية</th>
+                                <th>تاريخ النهاية</th>
+                                <th>الحالة</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="promotionsTableBody">
+                            <tr><td colspan="8" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- التحديثات (من GitHub فقط) -->
+        <!-- ========== قسم إدارة التحديثات ========== -->
         <div class="section-card" id="updatesSection">
             <div class="section-title">
-                <i class="fas fa-cloud-upload-alt"></i> إدارة التحديثات (GitHub)
-                <button class="btn btn-primary btn-sm me-auto" onclick="syncFromGithub()"><i class="fas fa-sync-alt me-1"></i>مزامنة من GitHub</button>
+                <i class="fas fa-cloud-upload-alt"></i> إدارة التحديثات
+            </div>
+            <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: var(--radius);">
+                <div class="col-md-2">
+                    <label class="form-label">رقم الإصدار *</label>
+                    <input type="text" id="updateVersion" class="form-control" placeholder="مثال: 1.2.0">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">رابط التحميل *</label>
+                    <input type="url" id="updateFileUrl" class="form-control" placeholder="https://github.com/.../release.exe" dir="ltr">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">ملاحظات التحديث</label>
+                    <input type="text" id="updateNotes" class="form-control" placeholder="ما الجديد في هذا الإصدار...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button class="btn btn-success flex-grow-1" onclick="addUpdate()">
+                        <i class="fas fa-plus me-1"></i> إضافة
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="syncFromGitHub()" title="مزامنة من GitHub">
+                        <i class="fab fa-github"></i>
+                    </button>
+                </div>
             </div>
             <div class="table-container">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>الإصدار</th>
-                            <th>تاريخ الإصدار</th>
-                            <th>ملاحظات</th>
-                            <th>الملف</th>
-                            <th>حجم الملف</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="updatesTableBody">
-                        <tr><td colspan="6" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>الإصدار</th>
+                                <th>ملاحظات</th>
+                                <th>رابط التحميل</th>
+                                <th>تاريخ</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="updatesTableBody">
+                            <tr><td colspan="5" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- إدارة قاعدة البيانات -->
+        <!-- ========== قسم قاعدة البيانات ========== -->
         <div class="section-card" id="databaseSection">
             <div class="section-title">
                 <i class="fas fa-database"></i> إدارة قاعدة البيانات
             </div>
-            <div class="d-flex gap-2 flex-wrap">
+            <div class="d-flex gap-3 flex-wrap">
                 <button class="btn btn-primary" onclick="downloadDatabase()">
-                    <i class="fas fa-download me-1"></i> تنزيل نسخة احتياطية
+                    <i class="fas fa-download me-2"></i>تنزيل نسخة احتياطية
                 </button>
-                <button class="btn btn-outline-primary" onclick="document.getElementById('uploadDbInput').click()">
-                    <i class="fas fa-upload me-1"></i> رفع واستيراد قاعدة بيانات
+                <button class="btn btn-warning" onclick="document.getElementById('uploadDatabaseInput').click()">
+                    <i class="fas fa-upload me-2"></i>رفع واستيراد قاعدة بيانات
                 </button>
-                <input type="file" id="uploadDbInput" accept=".db" style="display:none" onchange="uploadDatabase(this.files[0])">
+                <input type="file" id="uploadDatabaseInput" accept=".db" style="display:none" onchange="uploadDatabase(this.files[0])">
             </div>
-            <small class="text-muted d-block mt-2">تنزيل قاعدة البيانات الحالية أو استبدالها بملف خارجي (يتطلب إعادة تشغيل الخادم بعد الاستيراد).</small>
+            <small class="text-muted d-block mt-2">تنبيه: رفع قاعدة بيانات سيستبدل البيانات الحالية بالكامل. يُنصح بعمل نسخة احتياطية أولاً.</small>
         </div>
     </main>
-
-    <!-- مودال تعديل جهاز -->
-    <div class="modal fade" id="editDeviceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">تعديل بيانات الجهاز</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="editDeviceHwid">
-                    <div class="mb-3">
-                        <label class="form-label">اسم المحل</label>
-                        <input type="text" id="editShopName" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">رقم الهاتف</label>
-                        <input type="text" id="editPhone" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">الكود الترويجي</label>
-                        <input type="text" id="editDiscountCode" class="form-control">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="button" class="btn btn-primary" onclick="saveDeviceEdit()">حفظ</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -821,7 +922,10 @@
         const API_SETTINGS = '/api/settings';
         const API_UPDATES = '/api/updates';
         const API_PROMOTIONS = '/api/promotions';
+        const API_ACTIVATION_CODES = '/api/activation-codes';
         const API_DATABASE = '/api/database';
+
+        let savePricesTimeout = null;
 
         // ==================== دوال الإشعارات ====================
         function showToast(message, type = 'success') {
@@ -851,7 +955,14 @@
         document.addEventListener('DOMContentLoaded', () => { loadAll(); });
 
         async function loadAll() {
-            await Promise.all([loadDevices(), loadDiscountCodes(), loadPrices(), loadUpdates(), loadPromotions()]);
+            await Promise.all([
+                loadDevices(), 
+                loadDiscountCodes(), 
+                loadPrices(), 
+                loadUpdates(), 
+                loadPromotions(), 
+                loadActivationCodes()
+            ]);
         }
 
         // ==================== الإحصائيات ====================
@@ -862,8 +973,7 @@
             document.getElementById('blockedDevices').textContent = devices.filter(d => d.status === 'blocked' || d.status === 'expired').length;
         }
 
-        // ==================== الأسعار (حفظ تلقائي) ====================
-        let priceSaveTimeout;
+        // ==================== الأسعار ====================
         async function loadPrices() {
             try {
                 const res = await fetch(API_SETTINGS);
@@ -878,9 +988,9 @@
             } catch (e) { console.error(e); }
         }
 
-        function autoSavePrices() {
-            clearTimeout(priceSaveTimeout);
-            priceSaveTimeout = setTimeout(savePrices, 800);
+        function scheduleSavePrices() {
+            if (savePricesTimeout) clearTimeout(savePricesTimeout);
+            savePricesTimeout = setTimeout(savePrices, 800);
         }
 
         async function savePrices() {
@@ -892,7 +1002,7 @@
             };
             try {
                 const res = await fetch(API_SETTINGS, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription_prices: prices }) });
-                if (res.ok) showToast('تم حفظ الأسعار', 'success');
+                if (res.ok) showToast('تم حفظ الأسعار بنجاح', 'success');
                 else showToast('فشل حفظ الأسعار', 'error');
             } catch (e) { showToast('فشل الاتصال بالخادم', 'error'); }
         }
@@ -905,14 +1015,14 @@
                 renderDevices(devices);
                 updateStats(devices);
             } catch (e) {
-                document.getElementById('devicesTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
+                document.getElementById('devicesTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
             }
         }
 
         function renderDevices(devices) {
             const tbody = document.getElementById('devicesTableBody');
             if (!devices || devices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
                 return;
             }
             tbody.innerHTML = devices.map(d => {
@@ -924,11 +1034,10 @@
                     <td>${d.phone || '-'}</td>
                     <td><small><code>${d.hwid}</code></small></td>
                     <td>${statusBadge}</td>
-                    <td>${d.discount_code || '-'}</td>
                     <td>${expireDate !== '-' ? formatDateArabic(expireDate) : '-'}</td>
                     <td>${lastSeen}</td>
                     <td class="d-flex gap-1">
-                        <button class="btn-icon" title="تعديل" onclick='openEditModal(${JSON.stringify(d).replace(/'/g, "&#39;")})'><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" title="تعديل" onclick="openEditDeviceModal('${d.hwid}', '${d.shop_name || ''}', '${d.phone || ''}')"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon" title="تفعيل دائم" onclick="activatePermanent('${d.hwid}')"><i class="fas fa-infinity"></i></button>
                         <button class="btn-icon" title="تفعيل سنوي" onclick="activateSubscription('${d.hwid}', 12)"><i class="far fa-calendar-check"></i></button>
                         <button class="btn-icon" title="تمديد التجربة" onclick="extendTrial('${d.hwid}')"><i class="fas fa-clock"></i></button>
@@ -943,31 +1052,34 @@
             const labels = { activated: 'مفعل', trial: 'تجريبي', pending_payment: 'بانتظار الدفع', blocked: 'محظور', expired: 'منتهي' };
             const cls = classes[status] || 'bg-light text-dark';
             const label = labels[status] || status;
-            return `<span class="badge ${cls}">${label}</span>`;
+            return `<span class="badge ${cls}"><span class="dot" style="background:currentColor;opacity:0.5;margin-left:4px;"></span>${label}</span>`;
         }
 
-        function openEditModal(device) {
-            document.getElementById('editDeviceHwid').value = device.hwid;
-            document.getElementById('editShopName').value = device.shop_name || '';
-            document.getElementById('editPhone').value = device.phone || '';
-            document.getElementById('editDiscountCode').value = device.discount_code || '';
+        // نافذة تعديل الجهاز
+        function openEditDeviceModal(hwid, shopName, phone) {
+            document.getElementById('editDeviceHwid').value = hwid;
+            document.getElementById('editShopName').value = shopName;
+            document.getElementById('editPhone').value = phone;
+            document.getElementById('editDiscountCode').value = '';
             const modal = new bootstrap.Modal(document.getElementById('editDeviceModal'));
             modal.show();
         }
 
         async function saveDeviceEdit() {
             const hwid = document.getElementById('editDeviceHwid').value;
-            const shop_name = document.getElementById('editShopName').value.trim();
-            const phone = document.getElementById('editPhone').value.trim();
-            const discount_code = document.getElementById('editDiscountCode').value.trim();
+            const shopName = document.getElementById('editShopName').value;
+            const phone = document.getElementById('editPhone').value;
+            const discountCode = document.getElementById('editDiscountCode').value.trim();
+            const body = { shop_name: shopName, phone: phone };
+            if (discountCode) body.discount_code = discountCode;
             try {
                 const res = await fetch(`${API_DEVICES}/${hwid}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ shop_name, phone, discount_code })
+                    body: JSON.stringify(body)
                 });
                 if (res.ok) {
-                    showToast('تم تعديل الجهاز بنجاح', 'success');
+                    showToast('تم حفظ التغييرات', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('editDeviceModal')).hide();
                     loadDevices();
                 } else {
@@ -1017,7 +1129,7 @@
                 return;
             }
             tbody.innerHTML = codes.map(c => {
-                const typeLabel = { percent: 'نسبة مئوية', fixed: 'مبلغ ثابت', trial_extend: 'تمديد التجربة', subscription_extend: 'تمديد الاشتراك' }[c.type] || c.type;
+                const typeLabel = { percent: 'نسبة مئوية', fixed: 'مبلغ ثابت', trial_extend: 'تمديد التجربة', subscription_extend: 'تمديد الاشتراك', referral: 'إحالة' }[c.type] || c.type;
                 const expiryDate = c.expires_at ? formatDateArabic(c.expires_at) : 'غير محدد';
                 return `<tr>
                     <td><strong>${c.code}</strong></td><td>${typeLabel}</td><td>${c.value || '-'}</td>
@@ -1036,16 +1148,76 @@
             if (!code) { showToast('يرجى إدخال الكود', 'warning'); return; }
             try {
                 const res = await fetch(API_DISCOUNT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, type, value, expires_at, max_uses }) });
-                if (res.ok) { showToast('تم إضافة كود الخصم', 'success'); document.getElementById('discountCode').value = ''; document.getElementById('discountValue').value = ''; loadDiscountCodes(); }
-                else { const err = await res.json(); showToast('فشل: ' + (err.error || 'خطأ'), 'error'); }
-            } catch (e) { showToast('فشل الاتصال', 'error'); }
+                if (res.ok) { showToast('تم إضافة كود الخصم بنجاح', 'success'); document.getElementById('discountCode').value = ''; document.getElementById('discountValue').value = ''; loadDiscountCodes(); }
+                else { const err = await res.json(); showToast('فشل: ' + (err.error || 'خطأ غير معروف'), 'error'); }
+            } catch (e) { showToast('فشل الاتصال بالخادم', 'error'); }
         }
 
         async function deleteDiscountCode(code) {
             if (!confirm(`هل أنت متأكد من حذف الكود "${code}"؟`)) return;
             try {
                 const res = await fetch(`${API_DISCOUNT}/${code}`, { method: 'DELETE' });
-                if (res.ok) { showToast('تم حذف الكود', 'success'); loadDiscountCodes(); }
+                if (res.ok) { showToast('تم حذف الكود بنجاح', 'success'); loadDiscountCodes(); }
+                else showToast('فشل حذف الكود', 'error');
+            } catch (e) { showToast('فشل الاتصال بالخادم', 'error'); }
+        }
+
+        // ==================== أكواد التفعيل ====================
+        async function loadActivationCodes() {
+            try {
+                const res = await fetch(API_ACTIVATION_CODES);
+                const data = await res.json();
+                renderActivationCodes(data.data || []);
+            } catch (e) {
+                document.getElementById('activationCodesTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
+            }
+        }
+
+        function renderActivationCodes(codes) {
+            const tbody = document.getElementById('activationCodesTableBody');
+            if (!codes || codes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">لا توجد أكواد تفعيل</td></tr>';
+                return;
+            }
+            tbody.innerHTML = codes.map(c => {
+                const usedBadge = c.used ? '<span class="badge bg-warning text-dark">مستخدم</span>' : '<span class="badge bg-success">متاح</span>';
+                const usedBy = c.used_by_hwid ? `<small><code>${c.used_by_hwid}</code></small>` : '-';
+                return `<tr>
+                    <td><strong><code>${c.code}</code></strong></td>
+                    <td>${formatDateArabic(c.created_at)}</td>
+                    <td>${usedBadge}</td>
+                    <td>${usedBy}</td>
+                    <td>${!c.used ? `<button class="btn-icon" title="حذف" onclick="deleteActivationCode(${c.id})"><i class="fas fa-trash" style="color:#ef4444"></i></button>` : ''}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function generateActivationCodes() {
+            const count = parseInt(document.getElementById('activationCodesCount').value) || 5;
+            try {
+                const res = await fetch(`${API_ACTIVATION_CODES}/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count })
+                });
+                const data = await res.json();
+                if (data.success && data.codes) {
+                    const display = document.getElementById('generatedCodesDisplay');
+                    display.classList.remove('d-none');
+                    display.innerHTML = `<strong>✅ تم إنشاء ${data.codes.length} كود تفعيل:</strong><br><code>${data.codes.join('<br>')}</code>`;
+                    showToast('تم توليد الأكواد بنجاح', 'success');
+                    loadActivationCodes();
+                } else {
+                    showToast('فشل توليد الأكواد', 'error');
+                }
+            } catch (e) { showToast('فشل الاتصال', 'error'); }
+        }
+
+        async function deleteActivationCode(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الكود؟')) return;
+            try {
+                const res = await fetch(`${API_ACTIVATION_CODES}/${id}`, { method: 'DELETE' });
+                if (res.ok) { showToast('تم حذف الكود', 'success'); loadActivationCodes(); }
                 else showToast('فشل حذف الكود', 'error');
             } catch (e) { showToast('فشل الاتصال', 'error'); }
         }
@@ -1092,60 +1264,78 @@
             if (!title || !discount_value || !start_date || !end_date) { showToast('يرجى ملء جميع الحقول المطلوبة', 'warning'); return; }
             try {
                 const res = await fetch(API_PROMOTIONS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, discount_type, discount_value, start_date, end_date }) });
-                if (res.ok) { showToast('تم إضافة العرض', 'success'); document.getElementById('promoTitle').value = ''; document.getElementById('promoDiscountValue').value = ''; loadPromotions(); }
-                else { const err = await res.json(); showToast('فشل: ' + (err.error || 'خطأ'), 'error'); }
-            } catch (e) { showToast('فشل الاتصال', 'error'); }
+                if (res.ok) { showToast('تم إضافة العرض بنجاح', 'success'); document.getElementById('promoTitle').value = ''; document.getElementById('promoDiscountValue').value = ''; loadPromotions(); }
+                else { const err = await res.json(); showToast('فشل: ' + (err.error || 'خطأ غير معروف'), 'error'); }
+            } catch (e) { showToast('فشل الاتصال بالخادم', 'error'); }
         }
 
         async function deletePromotion(id) {
             if (!confirm('هل أنت متأكد من حذف هذا العرض؟')) return;
             try {
                 const res = await fetch(`${API_PROMOTIONS}/${id}`, { method: 'DELETE' });
-                if (res.ok) { showToast('تم حذف العرض', 'success'); loadPromotions(); }
+                if (res.ok) { showToast('تم حذف العرض بنجاح', 'success'); loadPromotions(); }
                 else showToast('فشل حذف العرض', 'error');
-            } catch (e) { showToast('فشل الاتصال', 'error'); }
+            } catch (e) { showToast('فشل الاتصال بالخادم', 'error'); }
         }
 
-        // ==================== التحديثات (GitHub) ====================
+        // ==================== التحديثات ====================
         async function loadUpdates() {
             const tbody = document.getElementById('updatesTableBody');
             try {
                 const res = await fetch(API_UPDATES);
                 const data = await res.json();
                 const updates = data.data || [];
-                if (updates.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد تحديثات، اضغط على مزامنة من GitHub</td></tr>';
-                } else {
-                    renderUpdates(updates);
-                }
-            } catch (e) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">فشل تحميل التحديثات</td></tr>'; }
+                if (updates.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">لا توجد تحديثات</td></tr>';
+                else renderUpdates(updates);
+            } catch (e) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">فشل تحميل التحديثات</td></tr>'; }
         }
 
         function renderUpdates(updates) {
             document.getElementById('updatesTableBody').innerHTML = updates.map(u => {
-                const fileUrl = u.file_url || '#';
-                const fileSize = u.file_size ? (u.file_size / 1024 / 1024).toFixed(2) + ' MB' : '-';
                 return `<tr>
                     <td><strong>${u.version}</strong></td>
-                    <td>${u.release_date ? formatDateArabic(u.release_date) : '-'}</td>
                     <td>${u.notes || '-'}</td>
-                    <td><a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary">تنزيل <i class="fas fa-external-link-alt ms-1"></i></a></td>
-                    <td>${fileSize}</td>
+                    <td><a href="${u.file_url}" target="_blank" class="btn btn-sm btn-outline-primary">تحميل <i class="fas fa-external-link-alt"></i></a></td>
+                    <td>${u.created_at ? formatDateArabic(u.created_at) : '-'}</td>
                     <td><button class="btn-icon" title="حذف" onclick="deleteUpdate('${u.version}')"><i class="fas fa-trash" style="color:#ef4444"></i></button></td>
                 </tr>`;
             }).join('');
         }
 
-        async function syncFromGithub() {
+        async function addUpdate() {
+            const version = document.getElementById('updateVersion').value.trim();
+            const file_url = document.getElementById('updateFileUrl').value.trim();
+            const notes = document.getElementById('updateNotes').value.trim();
+            if (!version || !file_url) { showToast('يرجى إدخال رقم الإصدار ورابط التحميل', 'warning'); return; }
             try {
-                showToast('جاري المزامنة من GitHub...', 'warning');
-                const res = await fetch(API_UPDATES + '/sync', { method: 'POST' });
-                const result = await res.json();
-                if (result.success) {
-                    showToast('تمت المزامنة بنجاح', 'success');
+                const res = await fetch(API_UPDATES, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ version, file_url, notes })
+                });
+                if (res.ok) {
+                    showToast('تم إضافة التحديث', 'success');
+                    document.getElementById('updateVersion').value = '';
+                    document.getElementById('updateFileUrl').value = '';
+                    document.getElementById('updateNotes').value = '';
                     loadUpdates();
                 } else {
-                    showToast('فشل: ' + (result.error || 'خطأ'), 'error');
+                    const err = await res.json();
+                    showToast('فشل: ' + (err.error || 'خطأ'), 'error');
+                }
+            } catch (e) { showToast('فشل الاتصال', 'error'); }
+        }
+
+        async function syncFromGitHub() {
+            try {
+                showToast('جاري المزامنة مع GitHub...', 'warning');
+                const res = await fetch(`${API_UPDATES}/sync`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`تمت المزامنة: ${data.version}`, 'success');
+                    loadUpdates();
+                } else {
+                    showToast('فشل المزامنة: ' + (data.error || 'خطأ'), 'error');
                 }
             } catch (e) { showToast('فشل الاتصال', 'error'); }
         }
@@ -1154,35 +1344,34 @@
             if (!confirm(`هل أنت متأكد من حذف التحديث "${version}"؟`)) return;
             try { 
                 const res = await fetch(`${API_UPDATES}/${version}`, { method: 'DELETE' }); 
-                if (res.ok) { showToast('تم حذف التحديث', 'success'); loadUpdates(); } 
+                if (res.ok) { showToast('تم حذف التحديث بنجاح', 'success'); loadUpdates(); } 
                 else showToast('فشل حذف التحديث', 'error'); 
-            }
-            catch (e) { showToast('فشل الاتصال', 'error'); }
+            } catch (e) { showToast('فشل الاتصال بالخادم', 'error'); }
         }
 
         // ==================== قاعدة البيانات ====================
         function downloadDatabase() {
-            window.open(API_DATABASE + '/download', '_blank');
+            window.open(`${API_DATABASE}/download`, '_blank');
         }
 
         async function uploadDatabase(file) {
             if (!file) return;
-            if (!confirm('هل أنت متأكد من استبدال قاعدة البيانات الحالية؟ هذا الإجراء لا يمكن التراجع عنه وسيتم إعادة تشغيل الخادم.')) {
-                document.getElementById('uploadDbInput').value = '';
+            if (!confirm('تحذير: هذا سيستبدل قاعدة البيانات الحالية بالكامل. هل أنت متأكد؟')) {
+                document.getElementById('uploadDatabaseInput').value = '';
                 return;
             }
             const formData = new FormData();
             formData.append('database', file);
             try {
-                const res = await fetch(API_DATABASE + '/upload', { method: 'POST', body: formData });
+                const res = await fetch(`${API_DATABASE}/upload`, { method: 'POST', body: formData });
                 const result = await res.json();
                 if (result.success) {
-                    showToast('تم استيراد قاعدة البيانات بنجاح، يُنصح بإعادة تشغيل الخادم', 'success');
+                    showToast('تم استبدال قاعدة البيانات بنجاح. قد تحتاج لإعادة تحميل الصفحة.', 'success');
                 } else {
                     showToast('فشل: ' + (result.error || 'خطأ'), 'error');
                 }
             } catch (e) { showToast('فشل الاتصال', 'error'); }
-            document.getElementById('uploadDbInput').value = '';
+            document.getElementById('uploadDatabaseInput').value = '';
         }
     </script>
 </body>
