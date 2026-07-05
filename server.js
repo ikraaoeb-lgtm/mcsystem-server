@@ -146,7 +146,6 @@ db.serialize(() => {
         value TEXT
     )`);
 
-    // جدول التحديثات الجديد (متوافق مع GitHub)
     db.run(`CREATE TABLE IF NOT EXISTS updates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         version TEXT NOT NULL,
@@ -176,7 +175,7 @@ db.serialize(() => {
         else console.log('✅ جدول promotions جاهز');
     });
 
-    // إعدادات افتراضية (بدون اشتراك شهري)
+    // إعدادات افتراضية
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('trial_days', '14')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('sync_interval', '15')`);
     db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('offline_grace_period', '90')`);
@@ -439,7 +438,6 @@ app.post('/api/devices/register', (req, res) => {
                     if (discount_code) {
                         applyDiscountToDevice(hwid, discount_code, (err, result) => {
                             if (err) console.error(err);
-                            // بعد تطبيق الكود، نعيد قراءة الجهاز
                             db.get('SELECT * FROM devices WHERE hwid = ?', [hwid], (err, updatedDevice) => {
                                 const payload = {
                                     status: updatedDevice.status,
@@ -542,6 +540,8 @@ app.put('/api/devices/:hwid', (req, res) => {
             } else if (activation_type === 'permanent') {
                 updates.subscription_end = null;
                 updates.server_subscription_end = null;
+                updates.trial_end = null;           // إضافة
+                updates.server_trial_end = null;    // إضافة
             }
         } else if (status === 'blocked') {
             updates.blocked_at = now;
@@ -698,8 +698,9 @@ app.post('/api/activation-codes/redeem', (req, res) => {
             if (!device) return res.json({ success: false, error: 'جهاز غير معروف' });
 
             const now = new Date().toISOString();
+            // تفعيل دائم مع مسح تواريخ التجربة
             db.run(
-                `UPDATE devices SET status = 'activated', activation_type = 'permanent', subscription_end = NULL, server_subscription_end = NULL, activated_at = ?, license_version = license_version + 1, updated_at = ? WHERE hwid = ?`,
+                `UPDATE devices SET status = 'activated', activation_type = 'permanent', trial_end = NULL, server_trial_end = NULL, subscription_end = NULL, server_subscription_end = NULL, activated_at = ?, license_version = license_version + 1, updated_at = ? WHERE hwid = ?`,
                 [now, now, hwid],
                 (err) => {
                     if (err) return res.status(500).json({ error: err.message });
@@ -781,9 +782,7 @@ app.delete('/api/promotions/:id', (req, res) => {
     });
 });
 
-// ================== نظام التحديثات (جديد - من GitHub) ==================
-
-// مزامنة التحديثات من GitHub (للاستخدام الإداري)
+// ================== نظام التحديثات ==================
 app.post('/api/updates/sync', async (req, res) => {
     try {
         const result = await syncUpdateFromGitHub();
@@ -793,7 +792,6 @@ app.post('/api/updates/sync', async (req, res) => {
     }
 });
 
-// الحصول على أحدث إصدار (مع التوقيع)
 app.get('/api/updates/latest', (req, res) => {
     db.get('SELECT * FROM updates ORDER BY release_date DESC LIMIT 1', (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -815,7 +813,6 @@ app.get('/api/updates/latest', (req, res) => {
     });
 });
 
-// إضافة تحديث يدوي (من لوحة التحكم)
 app.post('/api/updates', (req, res) => {
     const { version, release_date, notes, file_url, file_size, mandatory, channel, min_version } = req.body;
     if (!version || !file_url) return res.status(400).json({ error: 'Version and file_url are required' });
@@ -830,7 +827,6 @@ app.post('/api/updates', (req, res) => {
     );
 });
 
-// الحصول على جميع التحديثات
 app.get('/api/updates', (req, res) => {
     db.all('SELECT * FROM updates ORDER BY release_date DESC', (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -838,7 +834,6 @@ app.get('/api/updates', (req, res) => {
     });
 });
 
-// حذف إصدار
 app.delete('/api/updates/:version', (req, res) => {
     const { version } = req.params;
     db.run('DELETE FROM updates WHERE version = ?', [version], (err) => {
@@ -848,7 +843,6 @@ app.delete('/api/updates/:version', (req, res) => {
 });
 
 // ================== قاعدة البيانات ==================
-// تحميل قاعدة البيانات
 app.get('/api/database/download', (req, res) => {
     if (fs.existsSync(dbPath)) {
         res.download(dbPath, 'mcpos.db');
@@ -857,19 +851,14 @@ app.get('/api/database/download', (req, res) => {
     }
 });
 
-// رفع قاعدة البيانات (استبدال)
 app.post('/api/database/upload', upload.single('database'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'لم يتم إرسال ملف' });
 
     try {
-        // نسخ احتياطي للقاعدة الحالية
         const backupPath = dbPath + '.backup_' + Date.now();
         fs.copyFileSync(dbPath, backupPath);
-
-        // استبدال القاعدة
         fs.writeFileSync(dbPath, req.file.buffer);
 
-        // إعادة تحميل القاعدة
         db.close();
         const newDb = new sqlite3.Database(dbPath);
         newDb.run('PRAGMA journal_mode=WAL;');
