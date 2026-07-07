@@ -645,12 +645,14 @@
                                 <th>HWID</th>
                                 <th>الحالة</th>
                                 <th>تاريخ الانتهاء</th>
+                                <th>الكود المستخدم</th>
+                                <th>أجهزة فرعية</th>
                                 <th>آخر ظهور</th>
                                 <th>إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="devicesTableBody">
-                            <tr><td colspan="7" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -683,6 +685,24 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
                         <button type="button" class="btn btn-primary" onclick="saveDeviceEdit()">حفظ التغييرات</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- نافذة عرض الأجهزة الفرعية -->
+        <div class="modal fade" id="subDevicesModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">الأجهزة الفرعية المرتبطة</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="list-group" id="subDevicesList"></ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
                     </div>
                 </div>
             </div>
@@ -755,6 +775,10 @@
             </div>
             <div class="row g-3 mb-4 p-3" style="background: #f8fafc; border-radius: var(--radius);">
                 <div class="col-md-2">
+                    <label class="form-label">اسم الدفعة</label>
+                    <input type="text" id="batchLabel" class="form-control" placeholder="مثلاً: عرض الصيف">
+                </div>
+                <div class="col-md-2">
                     <label class="form-label">عدد الأكواد</label>
                     <input type="number" id="activationCodesCount" class="form-control" value="5" min="1" max="100">
                 </div>
@@ -763,7 +787,7 @@
                         <i class="fas fa-plus me-1"></i> توليد أكواد
                     </button>
                 </div>
-                <div class="col-md-8 d-flex align-items-end">
+                <div class="col-md-6 d-flex align-items-end">
                     <small class="text-muted">الأكواد المُنشأة ستظهر هنا مباشرة. انسخها فوراً لأنها لن تظهر مرة أخرى.</small>
                 </div>
             </div>
@@ -774,6 +798,7 @@
                         <thead>
                             <tr>
                                 <th>الكود</th>
+                                <th>الدفعة</th>
                                 <th>تاريخ الإنشاء</th>
                                 <th>مستخدم؟</th>
                                 <th>الجهاز</th>
@@ -781,7 +806,7 @@
                             </tr>
                         </thead>
                         <tbody id="activationCodesTableBody">
-                            <tr><td colspan="5" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-4">جاري تحميل البيانات...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1015,26 +1040,30 @@
                 renderDevices(devices);
                 updateStats(devices);
             } catch (e) {
-                document.getElementById('devicesTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
+                document.getElementById('devicesTableBody').innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
             }
         }
 
         function renderDevices(devices) {
             const tbody = document.getElementById('devicesTableBody');
             if (!devices || devices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">لا توجد أجهزة مسجلة</td></tr>';
                 return;
             }
             tbody.innerHTML = devices.map(d => {
                 const statusBadge = getStatusBadge(d.status);
                 const expireDate = d.trial_end || d.subscription_end || '-';
                 const lastSeen = d.last_seen ? formatDateArabic(d.last_seen) : '-';
+                const appliedCode = d.applied_code || '';
+                const subCount = d.sub_count || 0;
                 return `<tr>
                     <td>${d.shop_name || '-'}</td>
                     <td>${d.phone || '-'}</td>
                     <td><small><code>${d.hwid}</code></small></td>
                     <td>${statusBadge}</td>
                     <td>${expireDate !== '-' ? formatDateArabic(expireDate) : '-'}</td>
+                    <td>${appliedCode || '-'}</td>
+                    <td>${subCount} ${subCount > 0 ? `<button class="btn btn-sm btn-outline-secondary ms-1" onclick="showSubDevices('${d.hwid}')"><i class="fas fa-eye"></i></button>` : ''}</td>
                     <td>${lastSeen}</td>
                     <td class="d-flex gap-1">
                         <button class="btn-icon" title="تعديل" onclick="openEditDeviceModal('${d.hwid}', '${d.shop_name || ''}', '${d.phone || ''}')"><i class="fas fa-edit"></i></button>
@@ -1053,6 +1082,23 @@
             const cls = classes[status] || 'bg-light text-dark';
             const label = labels[status] || status;
             return `<span class="badge ${cls}"><span class="dot" style="background:currentColor;opacity:0.5;margin-left:4px;"></span>${label}</span>`;
+        }
+
+        // نافذة عرض الأجهزة الفرعية
+        async function showSubDevices(hwid) {
+            try {
+                const res = await fetch(`${API_DEVICES}/${hwid}/sub`);
+                const data = await res.json();
+                const list = document.getElementById('subDevicesList');
+                if (data.success && data.data.length) {
+                    list.innerHTML = data.data.map(d => `<li class="list-group-item"><code>${d.hwid}</code> - ${d.name || ''} (${d.ip || ''})</li>`).join('');
+                } else {
+                    list.innerHTML = '<li class="list-group-item text-muted">لا توجد أجهزة فرعية</li>';
+                }
+                new bootstrap.Modal(document.getElementById('subDevicesModal')).show();
+            } catch (e) {
+                showToast('فشل جلب الأجهزة الفرعية', 'error');
+            }
         }
 
         // نافذة تعديل الجهاز
@@ -1169,14 +1215,14 @@
                 const data = await res.json();
                 renderActivationCodes(data.data || []);
             } catch (e) {
-                document.getElementById('activationCodesTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
+                document.getElementById('activationCodesTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">فشل تحميل البيانات</td></tr>';
             }
         }
 
         function renderActivationCodes(codes) {
             const tbody = document.getElementById('activationCodesTableBody');
             if (!codes || codes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">لا توجد أكواد تفعيل</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد أكواد تفعيل</td></tr>';
                 return;
             }
             tbody.innerHTML = codes.map(c => {
@@ -1184,6 +1230,7 @@
                 const usedBy = c.used_by_hwid ? `<small><code>${c.used_by_hwid}</code></small>` : '-';
                 return `<tr>
                     <td><strong><code>${c.code}</code></strong></td>
+                    <td>${c.batch || '-'}</td>
                     <td>${formatDateArabic(c.created_at)}</td>
                     <td>${usedBadge}</td>
                     <td>${usedBy}</td>
@@ -1194,17 +1241,18 @@
 
         async function generateActivationCodes() {
             const count = parseInt(document.getElementById('activationCodesCount').value) || 5;
+            const label = document.getElementById('batchLabel').value.trim() || null;
             try {
                 const res = await fetch(`${API_ACTIVATION_CODES}/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ count })
+                    body: JSON.stringify({ count, label })
                 });
                 const data = await res.json();
                 if (data.success && data.codes) {
                     const display = document.getElementById('generatedCodesDisplay');
                     display.classList.remove('d-none');
-                    display.innerHTML = `<strong>✅ تم إنشاء ${data.codes.length} كود تفعيل:</strong><br><code>${data.codes.join('<br>')}</code>`;
+                    display.innerHTML = `<strong>✅ تم إنشاء ${data.codes.length} كود${label ? ' (' + label + ')' : ''}:</strong><br><code>${data.codes.join('<br>')}</code>`;
                     showToast('تم توليد الأكواد بنجاح', 'success');
                     loadActivationCodes();
                 } else {
