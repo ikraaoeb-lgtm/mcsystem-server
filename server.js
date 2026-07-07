@@ -388,6 +388,29 @@ app.get('/api/devices/:hwid/sub', (req, res) => {
     });
 });
 
+// تسجيل جهاز فرعي جديد (تحت جهاز رئيسي)
+app.post('/api/devices/register-sub', (req, res) => {
+    const { hwid, parent_hwid, name, ip } = req.body;
+    if (!hwid || !parent_hwid) {
+        return res.status(400).json({ success: false, error: 'hwid و parent_hwid مطلوبان' });
+    }
+
+    db.get('SELECT * FROM devices WHERE hwid = ?', [parent_hwid], (err, parent) => {
+        if (err || !parent) {
+            return res.status(404).json({ success: false, error: 'الجهاز الرئيسي غير موجود' });
+        }
+
+        db.run(
+            `INSERT OR REPLACE INTO sub_devices (hwid, parent_hwid, name, ip, approved_at) VALUES (?, ?, ?, ?, ?)`,
+            [hwid, parent_hwid, name, ip, new Date().toISOString()],
+            function(err) {
+                if (err) return res.status(500).json({ success: false, error: err.message });
+                res.json({ success: true });
+            }
+        );
+    });
+});
+
 // تسجيل جهاز جديد
 app.post('/api/devices/register', (req, res) => {
     const { hwid, shop_name, manager_name, email, phone, type, activation_type, discount_code } = req.body;

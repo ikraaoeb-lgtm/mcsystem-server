@@ -1421,6 +1421,11 @@
             } catch (e) { showToast('فشل الاتصال', 'error'); }
             document.getElementById('uploadDatabaseInput').value = '';
         }
+
+        // تحديث تلقائي كل 30 ثانية
+        setInterval(() => {
+            loadDevices();
+        }, 30000);
     </script>
 </body>
 </html>
