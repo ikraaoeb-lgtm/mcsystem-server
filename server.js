@@ -32,6 +32,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ---- فرض HTTPS في بيئة الإنتاج (Render) ----
+app.use((req, res, next) => {
+    // إذا كان الطلب قادماً عبر وكيل (مثل Render)، نتحقق من رأس x-forwarded-proto
+    const proto = req.headers['x-forwarded-proto'];
+    if (isRender && proto !== 'https') {
+        return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+});
+
 // ---- المفتاح الخاص (من متغير البيئة أو ملف محلي للتطوير فقط) ----
 const privateKey = process.env.PRIVATE_KEY
     || (fs.existsSync('private.pem') ? fs.readFileSync('private.pem', 'utf8') : '');
@@ -41,9 +51,14 @@ if (!privateKey) {
     process.exit(1);
 }
 
-// ---- حماية لوحة الإدارة بكلمة مرور ----
-const ADMIN_USER = process.env.ADMIN_USER || 'mcpos';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'mcpos2025';
+// ---- حماية لوحة الإدارة بكلمة مرور (من متغيرات البيئة فقط) ----
+const ADMIN_USER = process.env.ADMIN_USER;
+const ADMIN_PASS = process.env.ADMIN_PASS;
+
+if (!ADMIN_USER || !ADMIN_PASS) {
+    console.error('❌ ADMIN_USER و ADMIN_PASS يجب تعيينهما في متغيرات البيئة.');
+    process.exit(1);
+}
 
 app.use('/admin', (req, res, next) => {
     const b64auth = (req.headers.authorization || '').split(' ')[1] || '';

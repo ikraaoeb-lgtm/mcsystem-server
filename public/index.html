@@ -18,37 +18,94 @@
             --primary-dark: #1d4ed8;
             --accent: #fbbf24;
             --dark: #1e293b;
+            --darker: #0f172a;
             --light: #f8fafc;
             --text: #334155;
             --text-muted: #64748b;
             --border: #e2e8f0;
             --radius: 16px;
+            --radius-sm: 8px;
             --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
             --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 10px -6px rgba(0,0,0,0.1);
             --whatsapp: #25D366;
             --telegram: #0088cc;
             --facebook: #1877f2;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         * { font-family: 'Tajawal', sans-serif; }
-        body { background: var(--light); color: var(--text); }
-        .navbar { background: white; border-bottom: 1px solid var(--border); box-shadow: var(--shadow); }
+        body { background: var(--light); color: var(--text); padding-top: 72px; }
+
+        /* ========== Navbar ========== */
+        .navbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            min-height: 72px;
+            padding: 0;
+        }
+        .navbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 72px;
+        }
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--primary);
+            text-decoration: none;
+        }
         .navbar-brand img { height: 40px; }
-        .navbar-brand span { font-weight: 800; font-size: 1.5rem; color: var(--primary); }
-        .btn-primary { background: var(--primary); border: none; border-radius: 50px; padding: 12px 28px; font-weight: 600; transition: all 0.3s; }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+        .nav-links a:hover { background: #f1f5f9; color: var(--primary); }
+        .nav-actions { display: flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--primary); border: none; border-radius: 50px; padding: 10px 24px; font-weight: 600; transition: all 0.3s; color: white; }
         .btn-primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-        .btn-outline-primary { border: 2px solid var(--primary); color: var(--primary); border-radius: 50px; padding: 10px 24px; font-weight: 600; transition: all 0.3s; }
+        .btn-outline-primary { border: 2px solid var(--primary); color: var(--primary); border-radius: 50px; padding: 8px 20px; font-weight: 600; transition: all 0.3s; background: transparent; }
         .btn-outline-primary:hover:not(:disabled) { background: var(--primary); color: white; transform: translateY(-2px); }
         .btn-accent { background: var(--accent); color: var(--dark); border-radius: 50px; padding: 12px 28px; font-weight: 700; border: none; transition: all 0.3s; }
         .btn-accent:hover:not(:disabled) { background: #f59e0b; transform: translateY(-2px); box-shadow: var(--shadow-lg); }
         .btn-accent:disabled, .btn-primary:disabled, .btn-outline-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-        /* Hero */
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        /* ========== Hero ========== */
         .hero { padding: 80px 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; }
         .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.3; }
         .hero p { font-size: 1.2rem; opacity: 0.9; margin: 20px 0 30px; }
         .hero-img { max-width: 100%; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
 
-        /* Features */
+        /* ========== Features ========== */
         .feature-card {
             background: white; border-radius: var(--radius); padding: 30px 20px;
             box-shadow: var(--shadow); transition: 0.3s; text-align: center; height: 100%;
@@ -60,7 +117,7 @@
             font-size: 1.8rem; color: white;
         }
 
-        /* Pricing */
+        /* ========== Pricing ========== */
         .pricing-card {
             background: white; border-radius: var(--radius); padding: 40px 30px;
             box-shadow: var(--shadow-lg); text-align: center; max-width: 500px; margin: 0 auto;
@@ -72,7 +129,7 @@
         .price-list li:last-child { border-bottom: none; }
         .price-value { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
 
-        /* Promotions */
+        /* ========== Promotions ========== */
         .promo-card {
             background: linear-gradient(135deg, #fef3c7, #fffbeb); border-radius: var(--radius);
             padding: 20px; box-shadow: var(--shadow); position: relative; overflow: hidden;
@@ -80,17 +137,29 @@
         }
         .countdown { font-weight: 700; color: #b45309; }
 
-        /* Updates */
+        /* ========== Updates ========== */
+        .update-summary {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
         .update-badge { background: #dbeafe; color: var(--primary); padding: 4px 12px; border-radius: 50px; font-weight: 500; }
+        .update-details-modal .modal-body { max-height: 60vh; overflow-y: auto; white-space: pre-wrap; font-size: 0.9rem; line-height: 1.8; }
 
-        /* FAQ */
+        /* ========== FAQ ========== */
         .accordion-button:not(.collapsed) { background: #eff6ff; color: var(--primary); }
 
-        /* CTA */
+        /* ========== CTA ========== */
         .cta-section { background: var(--dark); color: white; padding: 60px 0; text-align: center; border-radius: var(--radius); margin: 40px 0; }
         .latest-version { display: inline-block; background: rgba(255,255,255,0.15); padding: 4px 16px; border-radius: 20px; margin-bottom: 10px; font-size: 0.9rem; }
 
-        /* Contact Section */
+        /* ========== Contact ========== */
         .contact-section { padding: 60px 0; }
         .contact-card {
             background: white; border-radius: var(--radius); padding: 24px 20px;
@@ -113,17 +182,33 @@
         .contact-card h5 { font-weight: 700; margin-bottom: 8px; }
         .contact-card p { color: var(--text-muted); margin: 0; font-size: 0.9rem; direction: ltr; }
 
-        /* Footer */
+        /* ========== Footer ========== */
         footer { background: #0f172a; color: #94a3b8; padding: 30px 0 20px; }
         footer a { color: #cbd5e1; text-decoration: none; transition: color 0.3s; }
         footer a:hover { color: white; }
         .footer-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin: 16px 0; }
         .footer-contact a { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
 
-        /* Responsive */
+        /* ========== Responsive ========== */
         @media (max-width: 768px) {
             .hero h1 { font-size: 2rem; }
             .hero p { font-size: 1rem; }
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                background: white;
+                position: absolute;
+                top: 72px;
+                left: 0;
+                right: 0;
+                padding: 8px;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+                z-index: 10;
+            }
+            .nav-links.show { display: flex; }
+            .mobile-menu-toggle { display: block; }
+            .nav-actions { gap: 4px; }
             .footer-contact { flex-direction: column; align-items: center; gap: 10px; }
         }
     </style>
@@ -131,14 +216,28 @@
 <body>
 
 <!-- Navbar -->
-<nav class="navbar navbar-expand-lg sticky-top">
+<nav class="navbar">
     <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="#">
-            <img src="asset/logo.png" alt="MCpos" class="me-2">
+        <a class="navbar-brand" href="#">
+            <img src="asset/logo.png" alt="MCpos">
             <span>MCpos</span>
         </a>
-        <div class="ms-auto">
-            <a href="#pricing" class="btn btn-outline-primary me-2">الأسعار</a>
+
+        <button class="mobile-menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="nav-links" id="navLinks">
+            <a href="#features">الميزات</a>
+            <a href="#pricing">الأسعار</a>
+            <a href="#promotions">العروض</a>
+            <a href="#updates">التحديثات</a>
+            <a href="#faq">الأسئلة</a>
+            <a href="#contact">اتصل بنا</a>
+        </div>
+
+        <div class="nav-actions">
+            <a href="#pricing" class="btn btn-outline-primary d-none d-md-inline-block">الأسعار</a>
             <a href="#download" class="btn btn-primary" id="navDownloadBtn" disabled>تحميل</a>
         </div>
     </div>
@@ -223,15 +322,32 @@
 <!-- Updates -->
 <section id="updates" class="py-5">
     <div class="container">
-        <h2 class="text-center fw-bold mb-5">آخر التحديثات</h2>
+        <h2 class="text-center fw-bold mb-4">آخر التحديثات</h2>
         <div id="latestUpdate" class="text-center">
             <p class="text-muted">جاري تحميل معلومات التحديث...</p>
         </div>
     </div>
 </section>
 
+<!-- نافذة تفاصيل التحديث -->
+<div class="modal fade update-details-modal" id="updateDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateDetailsTitle">تفاصيل التحديث</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body" id="updateDetailsBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <a href="#" class="btn btn-primary" id="updateDetailsDownloadBtn" target="_blank"><i class="fas fa-download me-1"></i>تحميل التحديث</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- FAQ -->
-<section class="py-5 bg-light">
+<section id="faq" class="py-5 bg-light">
     <div class="container">
         <h2 class="text-center fw-bold mb-5">الأسئلة الشائعة</h2>
         <div class="accordion" id="faqAccordion">
@@ -309,16 +425,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Product Config Architecture (قابل للتوسع)
-    const productsConfig = {
-        current: 'mcpos',
-        list: {
-            mcpos: { id: 'mcpos', name: 'MCpos', icon: 'fas fa-chart-line', color: '#2563eb' }
-        }
-    };
-    const activeProduct = productsConfig.list[productsConfig.current];
-
-    // جلب الأسعار (بدون اشتراك شهري)
+    // ========== جلب الأسعار ==========
     async function loadPrices() {
         try {
             const res = await fetch('/api/prices');
@@ -340,7 +447,7 @@
         }
     }
 
-    // تنسيق التاريخ بالأشهر العربية
+    // ========== تنسيق التاريخ بالأشهر العربية ==========
     function formatDateArabic(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr);
@@ -349,13 +456,10 @@
             'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
             'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
         ];
-        const day = d.getDate();
-        const month = months[d.getMonth()];
-        const year = d.getFullYear();
-        return `${day} ${month} ${year}`;
+        return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
 
-    // جلب العروض
+    // ========== جلب العروض ==========
     async function loadPromotions() {
         const container = document.getElementById('promotionsContainer');
         try {
@@ -386,7 +490,7 @@
         } catch(e) { container.innerHTML = '<div class="col-12 text-center text-muted">تعذر تحميل العروض</div>'; }
     }
 
-    // التحقق من كود الخصم
+    // ========== التحقق من كود الخصم ==========
     async function validateDiscountCode() {
         const code = document.getElementById('discountCodeInput').value.trim();
         const resultDiv = document.getElementById('discountResult');
@@ -416,7 +520,7 @@
         finally { btn.disabled = false; }
     }
 
-    // جلب آخر تحديث وتحديث جميع أزرار التحميل
+    // ========== جلب آخر تحديث (مع نافذة تفاصيل) ==========
     async function loadLatestUpdate() {
         const container = document.getElementById('latestUpdate');
         const versionBadge = document.getElementById('latestVersionBadge');
@@ -429,7 +533,6 @@
             const data = await res.json();
             const update = data.data;
 
-            // إذا لم نجد تحديثًا
             if (!update) {
                 container.innerHTML = '<p class="text-muted">لا توجد تحديثات بعد</p>';
                 versionBadge.innerHTML = 'الإصدار الأخير: غير متوفر';
@@ -444,22 +547,42 @@
 
             versionBadge.innerHTML = `الإصدار الأخير: ${version}${releaseDate ? ' (' + releaseDate + ')' : ''}`;
 
-            // التحقق من وجود رابط تحميل مباشر
+            // استخراج السطر الأول من الملاحظات
+            const firstLine = notes.split('\n')[0] || '';
+            const hasMore = notes.split('\n').length > 1 || notes.length > 100;
+
+            // تخزين بيانات التحديث للاستخدام في النافذة المنبثقة
+            window._latestUpdateData = { version, releaseDate, notes, fileUrl };
+
             if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
-                // رابط مباشر صالح
                 enableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn], fileUrl);
                 container.innerHTML = `
-                    <div class="update-badge d-inline-block mb-2">${version}${releaseDate ? ' (' + releaseDate + ')' : ''}</div>
-                    <p>${notes}</p>
-                    <a href="${fileUrl}" class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i>تحميل الإصدار ${version}</a>
+                    <div class="update-summary">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="update-badge">${version}</span>
+                            <span class="text-muted">${releaseDate || ''}</span>
+                            <span style="flex:1; text-align:right;">${firstLine}</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            ${hasMore ? '<button class="btn btn-sm btn-outline-primary" onclick="showUpdateDetails()"><i class="fas fa-eye me-1"></i>مشاهدة المزيد</button>' : ''}
+                            <a href="${fileUrl}" class="btn btn-sm btn-primary"><i class="fas fa-download me-1"></i>تحميل</a>
+                        </div>
+                    </div>
                 `;
             } else {
-                // لا يوجد رابط مباشر (ملف غير موجود في GitHub Release)
                 disableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn]);
                 container.innerHTML = `
-                    <div class="update-badge d-inline-block mb-2">${version}${releaseDate ? ' (' + releaseDate + ')' : ''}</div>
-                    <p>${notes}</p>
-                    <p class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>رابط التحميل غير متوفر حالياً، يرجى مراجعة صفحة الإصدارات على GitHub.</p>
+                    <div class="update-summary">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="update-badge">${version}</span>
+                            <span class="text-muted">${releaseDate || ''}</span>
+                            <span style="flex:1; text-align:right;">${firstLine}</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            ${hasMore ? '<button class="btn btn-sm btn-outline-primary" onclick="showUpdateDetails()"><i class="fas fa-eye me-1"></i>مشاهدة المزيد</button>' : ''}
+                            <span class="text-warning small"><i class="fas fa-exclamation-triangle me-1"></i>رابط التحميل غير متوفر</span>
+                        </div>
+                    </div>
                 `;
             }
         } catch(e) {
@@ -467,6 +590,31 @@
             versionBadge.innerHTML = 'الإصدار الأخير: غير متوفر';
             disableDownloadButtons([mainDownloadBtn, navDownloadBtn, heroDownloadBtn]);
         }
+    }
+
+    function showUpdateDetails() {
+        const update = window._latestUpdateData;
+        if (!update) return;
+
+        document.getElementById('updateDetailsTitle').textContent = `تفاصيل التحديث ${update.version}`;
+        document.getElementById('updateDetailsBody').innerHTML = `
+            <p><strong>الإصدار:</strong> ${update.version}</p>
+            <p><strong>تاريخ الإصدار:</strong> ${update.releaseDate || 'غير محدد'}</p>
+            <hr>
+            <h6>ملاحظات التحديث:</h6>
+            <div style="white-space: pre-wrap;">${update.notes || 'لا توجد ملاحظات'}</div>
+        `;
+
+        const downloadBtn = document.getElementById('updateDetailsDownloadBtn');
+        if (update.fileUrl && (update.fileUrl.startsWith('http://') || update.fileUrl.startsWith('https://'))) {
+            downloadBtn.href = update.fileUrl;
+            downloadBtn.style.display = '';
+        } else {
+            downloadBtn.style.display = 'none';
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('updateDetailsModal'));
+        modal.show();
     }
 
     function enableDownloadButtons(buttons, url) {
@@ -485,6 +633,14 @@
         });
     }
 
+    // ========== إغلاق قائمة الجوال عند النقر على رابط ==========
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', () => {
+            document.querySelector('.nav-links').classList.remove('show');
+        });
+    });
+
+    // ========== تهيئة ==========
     document.addEventListener('DOMContentLoaded', () => {
         loadPrices();
         loadPromotions();

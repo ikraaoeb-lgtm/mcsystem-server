@@ -8,8 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --sidebar-width: 250px;
-            --sidebar-collapsed: 70px;
             --primary: #6366f1;
             --primary-hover: #4f46e5;
             --primary-light: rgba(99, 102, 241, 0.1);
@@ -37,122 +35,148 @@
             --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * {
-            font-family: 'Segoe UI', 'Tajawal', Tahoma, sans-serif;
-        }
+        * { font-family: 'Segoe UI', 'Tajawal', Tahoma, sans-serif; }
 
         body {
             background: var(--bg);
             min-height: 100vh;
             color: var(--text);
-            display: flex;
             margin: 0;
+            padding-top: 72px;
         }
 
-        /* ========== الشريط الجانبي ========== */
-        .sidebar {
-            width: var(--sidebar-width);
-            min-height: 100vh;
+        /* ========== الشريط العلوي (Navbar) ========== */
+        .navbar {
             background: var(--darker);
             color: #cbd5e1;
             position: fixed;
             top: 0;
+            left: 0;
             right: 0;
-            bottom: 0;
-            z-index: 1000;
-            transition: width var(--transition), transform var(--transition);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 4px 0 20px rgba(0,0,0,0.2);
+            z-index: 1030;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-height: 72px;
+            padding: 0;
         }
 
-        .sidebar-header {
-            padding: 20px 16px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .sidebar-header .brand {
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: #fff;
+        .navbar .container-fluid {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .sidebar-header .brand i {
-            color: var(--primary);
-        }
-        .sidebar-header small {
-            font-size: 0.7rem;
-            color: #94a3b8;
-            display: block;
-            margin-top: 4px;
+            justify-content: space-between;
+            padding: 0 20px;
+            min-height: 72px;
+            flex-wrap: wrap;
         }
 
-        .sidebar-nav {
-            flex: 1;
-            padding: 16px 8px;
-            overflow-y: auto;
-        }
-        .sidebar-nav .nav-item {
+        .navbar-brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 14px;
-            margin-bottom: 4px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.3rem;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .navbar-brand i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .navbar-brand small {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            display: block;
+            font-weight: 400;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            overflow-x: auto;
+            max-width: 100%;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .nav-links::-webkit-scrollbar { display: none; }
+
+        .nav-link-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
             border-radius: var(--radius-sm);
             color: #cbd5e1;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: all var(--transition);
             cursor: pointer;
             border: none;
-            background: none;
-            width: 100%;
-            text-align: right;
+            background: transparent;
+            white-space: nowrap;
         }
-        .sidebar-nav .nav-item:hover {
-            background: rgba(255,255,255,0.06);
+
+        .nav-link-btn:hover {
+            background: rgba(255,255,255,0.08);
             color: #fff;
         }
-        .sidebar-nav .nav-item.active {
+
+        .nav-link-btn.active {
             background: var(--primary);
             color: #fff;
             font-weight: 500;
         }
-        .sidebar-nav .nav-item i {
-            width: 24px;
-            text-align: center;
-            font-size: 1rem;
+
+        .nav-link-btn i { font-size: 0.9rem; width: 20px; text-align: center; }
+
+        .navbar .btn-refresh {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
         }
 
-        .sidebar-footer {
-            padding: 12px 16px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            text-align: center;
-            font-size: 0.75rem;
-            color: #64748b;
+        .navbar .btn-refresh:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px 8px;
         }
 
         /* ========== المحتوى الرئيسي ========== */
         .main-content {
-            margin-right: var(--sidebar-width);
-            flex: 1;
             padding: 24px 28px;
-            min-height: 100vh;
-            transition: margin var(--transition);
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         /* ========== الهيدر العلوي ========== */
-        .top-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
+        .page-header {
+            margin-bottom: 28px;
         }
-        .top-bar h1 {
-            font-size: 1.5rem;
+
+        .page-header h1 {
+            font-size: 1.6rem;
             font-weight: 700;
             margin: 0;
             color: var(--text);
@@ -160,17 +184,15 @@
             align-items: center;
             gap: 10px;
         }
-        .top-bar .actions {
-            display: flex;
-            gap: 10px;
-        }
+
+        .page-header h1 i { color: var(--primary); }
 
         /* ========== بطاقات الإحصائيات ========== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 16px;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .stat-card {
@@ -186,24 +208,26 @@
             position: relative;
             overflow: hidden;
         }
+
         .stat-card::after {
             content: '';
             position: absolute;
             top: -20px;
-            left: -20px;
+            right: -20px;
             width: 80px;
             height: 80px;
             border-radius: 50%;
             opacity: 0.06;
             transition: all var(--transition);
         }
+
         .stat-card:hover {
             box-shadow: var(--shadow-md);
             transform: translateY(-2px);
         }
-        .stat-card:hover::after {
-            transform: scale(1.3);
-        }
+
+        .stat-card:hover::after { transform: scale(1.3); }
+
         .stat-card.primary::after { background: var(--primary); }
         .stat-card.success::after { background: var(--success); }
         .stat-card.warning::after { background: var(--warning); }
@@ -220,20 +244,21 @@
             color: #fff;
             flex-shrink: 0;
         }
+
         .stat-card.primary .stat-icon { background: var(--primary); }
         .stat-card.success .stat-icon { background: var(--success); }
         .stat-card.warning .stat-icon { background: var(--warning); }
         .stat-card.danger .stat-icon { background: var(--danger); }
 
-        .stat-info {
-            flex: 1;
-        }
+        .stat-info { flex: 1; }
+
         .stat-value {
             font-size: 1.7rem;
             font-weight: 700;
             line-height: 1.1;
             color: var(--text);
         }
+
         .stat-label {
             font-size: 0.8rem;
             color: var(--text-secondary);
@@ -250,9 +275,9 @@
             box-shadow: var(--shadow-xs);
             transition: box-shadow var(--transition);
         }
-        .section-card:hover {
-            box-shadow: var(--shadow-sm);
-        }
+
+        .section-card:hover { box-shadow: var(--shadow-sm); }
+
         .section-title {
             font-weight: 700;
             font-size: 1.05rem;
@@ -264,6 +289,7 @@
             padding-bottom: 14px;
             border-bottom: 1px solid var(--border);
         }
+
         .section-title i {
             color: var(--primary);
             font-size: 1.1rem;
@@ -275,10 +301,12 @@
             overflow: hidden;
             border: 1px solid var(--border);
         }
+
         .table {
             margin-bottom: 0;
             font-size: 0.85rem;
         }
+
         .table thead th {
             background: #f8fafc;
             border-bottom: 2px solid var(--border);
@@ -288,17 +316,15 @@
             white-space: nowrap;
             font-size: 0.8rem;
         }
+
         .table tbody td {
             padding: 10px 12px;
             vertical-align: middle;
             border-bottom: 1px solid var(--border);
         }
-        .table tbody tr:hover {
-            background: #f8fafc;
-        }
-        .table tbody tr:last-child td {
-            border-bottom: none;
-        }
+
+        .table tbody tr:hover { background: #f8fafc; }
+        .table tbody tr:last-child td { border-bottom: none; }
 
         /* ========== الأزرار ========== */
         .btn {
@@ -310,41 +336,17 @@
             border: none;
             cursor: pointer;
         }
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-        }
-        .btn-primary:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
-        }
-        .btn-success {
-            background: var(--success);
-            color: #fff;
-        }
-        .btn-success:hover {
-            background: #059669;
-        }
-        .btn-warning {
-            background: var(--warning);
-            color: #000;
-        }
-        .btn-danger {
-            background: var(--danger);
-            color: #fff;
-        }
-        .btn-outline-primary {
-            background: transparent;
-            border: 1px solid var(--primary);
-            color: var(--primary);
-        }
-        .btn-outline-primary:hover {
-            background: var(--primary-light);
-        }
-        .btn-sm {
-            padding: 4px 10px;
-            font-size: 0.75rem;
-        }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: var(--warning); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-outline-primary { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-outline-primary:hover { background: var(--primary-light); }
+        .btn-sm { padding: 4px 10px; font-size: 0.75rem; }
+
         .btn-icon {
             width: 32px;
             height: 32px;
@@ -359,18 +361,17 @@
             background: transparent;
             color: var(--text-secondary);
         }
-        .btn-icon:hover {
-            background: var(--primary-light);
-            color: var(--primary);
-        }
+
+        .btn-icon:hover { background: var(--primary-light); color: var(--primary); }
 
         /* ========== بطاقات الأسعار ========== */
         .prices-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 14px;
             margin-bottom: 16px;
         }
+
         .price-card {
             background: #f8fafc;
             border: 2px solid var(--border);
@@ -379,15 +380,18 @@
             text-align: center;
             transition: all var(--transition);
         }
+
         .price-card:hover {
             border-color: var(--primary);
             box-shadow: 0 0 0 4px var(--primary-light);
         }
+
         .price-card h5 {
             font-size: 0.85rem;
             color: var(--text-secondary);
             margin-bottom: 10px;
         }
+
         .price-card input {
             border: none;
             background: transparent;
@@ -398,6 +402,7 @@
             text-align: center;
             outline: none;
         }
+
         .price-card .currency {
             font-size: 0.75rem;
             color: #94a3b8;
@@ -412,11 +417,13 @@
             font-size: 0.85rem;
             transition: border-color var(--transition), box-shadow var(--transition);
         }
+
         .form-control:focus, .form-select:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px var(--primary-light);
             outline: none;
         }
+
         .form-label {
             font-weight: 600;
             font-size: 0.8rem;
@@ -431,28 +438,18 @@
             border-radius: 6px;
             font-weight: 500;
         }
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .status-badge .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            display: inline-block;
-        }
 
         /* ========== توست الإشعارات ========== */
         .toast-container {
             position: fixed;
-            top: 20px;
+            top: 80px;
             left: 20px;
             z-index: 9999;
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
+
         .custom-toast {
             background: var(--card-bg);
             border-radius: var(--radius);
@@ -465,6 +462,7 @@
             animation: slideIn 0.3s ease;
             border-right: 4px solid var(--primary);
         }
+
         .custom-toast.success { border-right-color: var(--success); }
         .custom-toast.error { border-right-color: var(--danger); }
         .custom-toast.warning { border-right-color: var(--warning); }
@@ -474,29 +472,39 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
+        .modal-backdrop { z-index: 1040; }
+        .modal { z-index: 1050; }
+
         /* ========== استجابة الجوال ========== */
         @media (max-width: 768px) {
-            .sidebar {
-                width: var(--sidebar-collapsed);
-            }
-            .sidebar .nav-item span,
-            .sidebar .sidebar-header small,
-            .sidebar .sidebar-footer {
+            .nav-links {
                 display: none;
+                flex-direction: column;
+                width: 100%;
+                background: var(--darker);
+                position: absolute;
+                top: 72px;
+                left: 0;
+                right: 0;
+                padding: 8px;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
             }
-            .main-content {
-                margin-right: var(--sidebar-collapsed);
-                padding: 16px;
+
+            .nav-links.show { display: flex; }
+
+            .nav-link-btn {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 12px 16px;
             }
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            }
-        }
-        .modal-backdrop {
-            z-index: 1040;
-        }
-        .modal {
-            z-index: 1050;
+
+            .mobile-menu-toggle { display: block; }
+
+            .main-content { padding: 16px; }
+
+            .stats-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+            .navbar .btn-refresh { font-size: 0.8rem; padding: 6px 10px; }
         }
     </style>
 </head>
@@ -505,66 +513,61 @@
     <!-- ========== توست الإشعارات ========== -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- ========== الشريط الجانبي ========== -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="brand">
+    <!-- ========== الشريط العلوي (Navbar) ========== -->
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
                 <i class="fas fa-shield-haltered"></i>
-                <span>MCpos</span>
+                <div>
+                    MCpos
+                    <small>لوحة تحكم التراخيص</small>
+                </div>
+            </a>
+
+            <button class="mobile-menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="nav-links" id="navLinks">
+                <button class="nav-link-btn active" onclick="scrollToSection('statsRow')">
+                    <i class="fas fa-chart-bar"></i> الإحصائيات
+                </button>
+                <button class="nav-link-btn" onclick="scrollToSection('pricesSection')">
+                    <i class="fas fa-money-bill-wave"></i> الأسعار
+                </button>
+                <button class="nav-link-btn" onclick="scrollToSection('devicesSection')">
+                    <i class="fas fa-laptop"></i> الأجهزة
+                </button>
+                <button class="nav-link-btn" onclick="scrollToSection('discountSection')">
+                    <i class="fas fa-tags"></i> أكواد الخصم
+                </button>
+                <button class="nav-link-btn" onclick="scrollToSection('activationCodesSection')">
+                    <i class="fas fa-key"></i> أكواد التفعيل
+                </button>
+                <button class="nav-link-btn" onclick="scrollToSection('promoSection')">
+                    <i class="fas fa-gift"></i> العروض
+                </button>
+                <button class="nav-link-btn" onclick="scrollToSection('updatesSection')">
+                    <i class="fas fa-cloud-upload-alt"></i> التحديثات
+                </button>
+                <button class="nav-link-btn" onclick="scrollToSection('databaseSection')">
+                    <i class="fas fa-database"></i> قاعدة البيانات
+                </button>
             </div>
-            <small>لوحة تحكم التراخيص</small>
+
+            <button class="btn-refresh" onclick="loadAll()">
+                <i class="fas fa-sync-alt"></i> تحديث الكل
+            </button>
         </div>
-        <nav class="sidebar-nav">
-            <button class="nav-item active" onclick="scrollToSection('statsRow')">
-                <i class="fas fa-chart-bar"></i>
-                <span>الإحصائيات</span>
-            </button>
-            <button class="nav-item" onclick="scrollToSection('pricesSection')">
-                <i class="fas fa-money-bill-wave"></i>
-                <span>الأسعار</span>
-            </button>
-            <button class="nav-item" onclick="scrollToSection('devicesSection')">
-                <i class="fas fa-laptop"></i>
-                <span>الأجهزة</span>
-            </button>
-            <button class="nav-item" onclick="scrollToSection('discountSection')">
-                <i class="fas fa-tags"></i>
-                <span>أكواد الخصم</span>
-            </button>
-            <button class="nav-item" onclick="scrollToSection('activationCodesSection')">
-                <i class="fas fa-key"></i>
-                <span>أكواد التفعيل</span>
-            </button>
-            <button class="nav-item" onclick="scrollToSection('promoSection')">
-                <i class="fas fa-gift"></i>
-                <span>العروض</span>
-            </button>
-            <button class="nav-item" onclick="scrollToSection('updatesSection')">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <span>التحديثات</span>
-            </button>
-            <button class="nav-item" onclick="scrollToSection('databaseSection')">
-                <i class="fas fa-database"></i>
-                <span>قاعدة البيانات</span>
-            </button>
-        </nav>
-        <div class="sidebar-footer">
-            &copy; 2025 MCpos Team
-        </div>
-    </aside>
+    </nav>
 
     <!-- ========== المحتوى الرئيسي ========== -->
     <main class="main-content">
-        <div class="top-bar">
+        <div class="page-header">
             <h1>
-                <i class="fas fa-crown" style="color: var(--primary)"></i>
+                <i class="fas fa-crown"></i>
                 لوحة تحكم التراخيص
             </h1>
-            <div class="actions">
-                <button class="btn btn-primary" onclick="loadAll()">
-                    <i class="fas fa-sync-alt me-2"></i>تحديث الكل
-                </button>
-            </div>
         </div>
 
         <!-- ========== إحصائيات سريعة ========== -->
@@ -633,7 +636,7 @@
         <div class="section-card" id="devicesSection">
             <div class="section-title">
                 <i class="fas fa-laptop"></i> الأجهزة المسجلة
-                <button class="btn btn-primary btn-sm me-auto" onclick="loadDevices()"><i class="fas fa-sync-alt me-1"></i>تحديث</button>
+                <button class="btn btn-primary btn-sm ms-auto" onclick="loadDevices()"><i class="fas fa-sync-alt me-1"></i>تحديث</button>
             </div>
             <div class="table-container">
                 <div class="table-responsive">
@@ -965,7 +968,17 @@
 
         function scrollToSection(id) {
             const el = document.getElementById(id);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (el) {
+                const offset = 80;
+                const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+                window.scrollTo({ top, behavior: 'smooth' });
+            }
+            // تحديث حالة الأزرار النشطة
+            document.querySelectorAll('.nav-link-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.nav-link-btn[onclick*="${id}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            // إغلاق القائمة في الجوال
+            document.querySelector('.nav-links')?.classList.remove('show');
         }
 
         function formatDateArabic(dateStr) {
